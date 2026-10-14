@@ -92,11 +92,11 @@ devices:
 | `format` | `mjpeg` | `mjpeg`／`h264`／`h265`／`nv12`，单一格式；能力表中对应位必须存在 |
 | `width`、`height` | `0`、`0` | 0～65535；同时为 0 或同时非零，非零必须精确匹配能力模式 |
 | `fps` | `0` | 0～65535，非零时必须设置宽高并匹配能力表 |
-| `publish_decoded` | `true` | 软件解码为 bgr8，并发布匹配尺寸的 CameraInfo |
+| `publish_decoded` | `true` | 自动优先硬件解码为 bgr8，无可用硬解时回退 CPU，并发布匹配尺寸的 CameraInfo |
 | `publish_encoded` | `true` | 发布自定义 EncodedFrame；不把 H264/H265 标成 JPEG |
 | `camera_info_url` | 空 | camera_info_manager 的标准 ROS 标定 YAML URL |
 
-NV12 要求显式偶数尺寸和精确 `width × height × 3/2` 字节。软件解码额外限制 8192×8192、编码包最大 64 MiB。MJPEG 自动发布 JPEG `CompressedImage`，无重新编码；此输出随相机 enabled／限频控制。相机 topic 的父路径决定 encoded 和 camera_info 路径；例如 `left/image_raw` 派生 `left/encoded`、`left/camera_info` 和 `left/image_raw/compressed`。
+NV12 要求显式偶数尺寸和精确 `width × height × 3/2` 字节。解码额外限制 8192×8192、编码包最大 64 MiB。MJPEG 自动发布 JPEG `CompressedImage`，无重新编码；此输出随相机 enabled／限频控制。相机 topic 的父路径决定 encoded 和 camera_info 路径；例如 `left/image_raw` 派生 `left/encoded`、`left/camera_info` 和 `left/image_raw/compressed`。
 
 非相机通道拒绝 `format` 或非零宽高／设备 fps，SDK 没有对应采集控制 API。`publish_rate` 是主机限频。队列总量还应考虑正在处理的包、ROS publisher 队列、SDK 内部缓冲和解码帧，这些不计入 `queue_bytes`。
 
@@ -121,3 +121,5 @@ CameraInfo 仅接受标准 ROS YAML，`config/camera_info_example.yaml` 提供�
 ## 运行时动态配置
 
 每台设备 `/name/set_parameters` 为独立 dynamic_reconfigure server；可调九个 `*_enabled` 和九个 `*_publish_rate`（0～2000 Hz）。`apply_filters=true` 显式应用 confidence／range／adaptive 三组参数，完成后自动回到 false。通道调整通过受控重连完成；滤波通过查询、设置、读回与回滚完成。失败恢复先前配置，恢复失败将设备标为 retrying，停止旧数据输出。
+
+硬件探测、后端优先级、30 秒重试与容器设备传入见 [硬件解码](hardware-decoding.md)。

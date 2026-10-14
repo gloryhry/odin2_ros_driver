@@ -22,7 +22,7 @@
 
 EncodedFrame 的 width/height 是 SDK 回调值，未指定自动模式时编码帧可能是 0；解码 Image 始终使用码流解析尺寸。is_keyframe 重新扫描实际 IDR/HEVC 随机接入 NAL，单独的 SPS 不视为恢复帧。所有自定义消息以具名字段承载数据；枚举常量可从生成的 ROS 类型读取。
 
-`ChannelStatus` 区分 received、published（发布过输出的 SDK 包数）、decoded_frames（软件解码帧数）、sequence_gaps（SDK 帧号缺口）、queue_drops、decode_errors、invalid_packets、out_of_order、queue_depth、queue_bytes、last_receive_age 和 last_publish_latency_ms。`reconnects` 记录成功建立连接的次数，包含首次连接。重复／倒序帧计入 out_of_order。last_receive_age=-1 表示本连接还没收到数据。SDK 没有暴露完整网络丢包统计，sequence_gaps 不等于所有 UDP 丢包。
+`ChannelStatus` 区分 received、published（发布过输出的 SDK 包数）、decoded_frames（硬件或 CPU 解码完成帧数）、sequence_gaps（SDK 帧号缺口）、queue_drops、decode_errors、invalid_packets、out_of_order、queue_depth、queue_bytes、last_receive_age 和 last_publish_latency_ms。`reconnects` 记录成功建立连接的次数，包含首次连接。重复／倒序帧计入 out_of_order。last_receive_age=-1 表示本连接还没收到数据。SDK 没有暴露完整网络丢包统计，sequence_gaps 不等于所有 UDP 丢包。
 
 ## 服务约定
 

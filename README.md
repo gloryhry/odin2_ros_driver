@@ -1,8 +1,8 @@
 # Odin2 ROS1 驱动
 
-`odin2_ros_driver` 基于随仓库提供的 Odin SDK **3.3.0_20260822**，使用 ROS Noetic、Ubuntu 20.04 和 C++17。支持 x86_64、ARM64，以及在 JetPack 5/6 上运行通用 ARM64 容器的 Jetson Orin。SDK 源码保持原样，图像使用 FFmpeg CPU 解码。
+`odin2_ros_driver` 基于随仓库提供的 Odin SDK **3.3.0_20260822**，使用 ROS Noetic 和 C++17。支持 x86_64、ARM64、Jetson Orin JetPack 5/6。SDK 源码保持原样，图像自动优先硬件解码，全部硬解不可用时回退 CPU；Jetson 提供与 JetPack 匹配的专用镜像，见 [硬件解码与部署](docs/hardware-decoding.md)。
 
-每台设备具有独立命名空间、连接状态机、有界队列、时间映射、解码器和动态配置。支持 SDK 的原始／SLAM 点云、左右相机、IMU、高低频里程计、TF 和遥测；默认仅启用原始点云、IMU、遥测和诊断。提供具名管理服务及异步文件任务。生产代码及此前本地模拟验收记录已交付；设备固件兼容性、真实网络、ARM／Orin 性能仍须实机验收，见 [验证记录](docs/validation.md)。
+每台设备具有独立命名空间、连接状态机、有界队列、时间映射、解码器和动态配置。支持 SDK 的原始／SLAM 点云、左右相机、IMU、高低频里程计、TF 和遥测；默认仅启用原始点云、IMU、遥测和诊断。提供具名管理服务及异步文件任务。代码和模拟验收已交付；设备固件兼容性、真实网络、ARM／Orin 性能仍须实机验收，见 [验证记录](docs/validation.md)。
 
 ## 快速启动
 
@@ -35,6 +35,8 @@ docker compose -f docker/compose.yaml up -d
 sudo apt-get update
 sudo apt-get install build-essential cmake pkg-config libeigen3-dev libssl-dev \
   libavcodec-dev libavutil-dev libswscale-dev \
+  libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+  gstreamer1.0-plugins-base gstreamer1.0-plugins-bad \
   ros-noetic-camera-info-manager ros-noetic-diagnostic-updater \
   ros-noetic-dynamic-reconfigure ros-noetic-tf2-ros
 mkdir -p ~/odin2_ws/src
@@ -83,6 +85,6 @@ roslaunch odin2_ros_driver rviz.launch
 
 ## CI 与版权
 
-本次提交排除测试源码与测试构建配置，测试文件保留在本地。GitHub Actions 在 PR 上构建两种架构并检查运行时动态库依赖；`main`、版本标签和手动触发在两架构构建成功后发布到小写的 `ghcr.io/<owner>/<repository>`。多架构 manifest 包含 `linux/amd64` 和 `linux/arm64`，详细标签和权限见部署文档。本地目录当前没有可用 Git remote，本轮没有向 GHCR 实际推送。
+驱动测试源码和测试构建配置保留在本地，本次提交包含 SDK 独立的 `https_client_test` 示例。GitHub Actions 在 PR 上构建两种架构并检查运行时动态库依赖；`main`、版本标签和手动触发在两架构构建成功后发布到小写的 `ghcr.io/<owner>/<repository>`。多架构 manifest 包含 `linux/amd64` 和 `linux/arm64`，详细标签和权限见部署文档。本地目录当前没有可用 Git remote，本轮没有向 GHCR 实际推送。
 
 [LICENSE](LICENSE) 仅覆盖新增驱动。供应商 SDK 和第三方版权保持原声明，详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。镜像携带对应 SDK／驱动源码、构建信息和第三方说明。`package.xml` 维护者地址是占位值，公开发布前请维护者填写真实联系方式；本项目不重新授予 SDK 许可。

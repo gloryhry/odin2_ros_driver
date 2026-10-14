@@ -1,0 +1,148 @@
+{
+  "date": "2026-10-14",
+  "git_base": "b4c0c4167671cef8bc155e8e97485e1c3d570f84",
+  "worktree_changes": "uncommitted; preexisting work preserved",
+  "source_fingerprint_sha256": "8d6c64b31b306c74926a68d6ea7432e1e1c532676ac184df932b227c4c901db9",
+  "fingerprint_scope": "sorted relative paths with NUL separator and binary SHA256 contents; src, include, msg, srv, cfg, test, scripts, CMakeLists.txt, package.xml; excludes pycache",
+  "amd64": {
+    "status": "passed",
+    "execution": "Ubuntu20/Noetic container without GPU devices",
+    "gtest_passed": 28,
+    "gtest_skipped": 1,
+    "skipped_test": "HardwareDecoder.RealHardwareWhenExplicitlyRequested",
+    "ros_integration": "passed",
+    "async_ros_integration": "passed",
+    "runtime_smoke": "passed",
+    "catkin_summary": "62 tests, 0 errors, 0 failures, 0 skipped (aggregate; explicit gtest reports hardware skip)",
+    "runtime_image": "odin2-hw:local",
+    "runtime_image_digest": "sha256:282c6533174724f2aca5948138373dea86357d10feafaafc32406980a20d4a4a",
+    "test_image": "odin2-hw-test:local",
+    "test_image_digest": "sha256:d2cd09e678bd298ef01b16415a8d53da399da9503f2fc0996512896df5c30823",
+    "image_source_fingerprint_matches_worktree": true
+  },
+  "arm64": {
+    "status": "passed",
+    "execution": "BuildKit bundled QEMU; local OCI ROS base used to avoid Docker Hub metadata failures",
+    "gtest_passed": 28,
+    "gtest_skipped": 1,
+    "ros_integration": "passed",
+    "async_ros_integration": "passed",
+    "runtime_smoke": "passed",
+    "catkin_summary": "62 tests, 0 errors, 0 failures, 0 skipped (aggregate; explicit gtest reports hardware skip)",
+    "runtime_image": "odin2-hw:arm64",
+    "runtime_image_digest": "sha256:eb34ac61b1c05699d794ec1e588d05a68be02403b21c35cd2164d20071fce8dc",
+    "platform": "linux/arm64",
+    "packaged_source_fingerprint_matches_worktree": true
+  },
+  "nvidia": {
+    "status": "passed",
+    "gpu": "NVIDIA GeForce RTX 5060 Laptop GPU",
+    "driver": "595.91.07",
+    "device": "0",
+    "execution": "real GPU through NVIDIA Container Toolkit; synthetic 256x256 input",
+    "gtest_passed": 29,
+    "gtest_skipped": 0,
+    "backends": {
+      "MJPEG": "cuda/mjpeg",
+      "H264": "cuda/h264",
+      "H265": "cuda/hevc"
+    },
+    "stereo_contexts": "two independent live decoder contexts for each format; isolated headers and timestamps",
+    "output": "bgr8; red fixture channels and hardware-vs-CPU color comparison passed",
+    "unsupported_dimensions": "16x16 fixtures reject hardware and successfully use CPU",
+    "log": "evidence/hardware-decoding-nvidia.log",
+    "ros_worker_integration": {
+      "status": "passed",
+      "formats": [
+        "MJPEG",
+        "H264",
+        "H265"
+      ],
+      "cameras": 2,
+      "diagnostics": "expected cuda backend and hardware_active=true on both cameras",
+      "headers": "image and encoded seq/stamp match; camera frame_id isolated",
+      "shutdown": "SIGINT; driver exits with code 0 within 15 s",
+      "sdk": "mock; advertises 16x16 modes but compressed payload replaced by 256x256 fixtures for hardware check",
+      "script": "evidence/gpu-ros-validation.py",
+      "log": "evidence/hardware-decoding-gpu-ros.log"
+    }
+  },
+  "jammy_noetic_source_recipe": {
+    "status": "passed",
+    "base": "ubuntu:22.04",
+    "architecture": "amd64",
+    "ros_packages_built": 75,
+    "rosconsole_backend": "glog (official backend; released log4cxx adapter is incompatible with Jammy)",
+    "compiler": "GCC 11.4.0",
+    "libavcodec": "58.134.100 (FFmpeg 4.4.2)",
+    "gstreamer": "1.20.1",
+    "gtest_passed": 28,
+    "gtest_skipped": 1,
+    "catkin_summary": "62 tests, 0 errors, 0 failures, 1 skipped",
+    "ros_integration": "passed",
+    "async_ros_integration": "passed",
+    "relocated_install_smoke": "passed",
+    "source_manifest_sha256": "00139d3b60cf33606fd83ceb99cf252c31844f03108e925c7b69d9e9f17bcd19",
+    "base_image": "odin2-noetic-jammy:validation",
+    "base_image_digest": "sha256:145e29ef3ba5a8acfd666649ce81a568236f1448f5feb42f521c03e14776399b",
+    "project_image": "odin2-jammy-test:validation",
+    "project_image_digest": "sha256:b4b2386ef899327a06482f893a7cdf81d71397ef8d9096214a137358fcde674c",
+    "image_source_fingerprint_matches_worktree": true,
+    "real_nvidia_gtest_passed": 29,
+    "real_nvidia_gtest_log": "evidence/hardware-decoding-jammy-nvidia.log",
+    "real_nvidia_ros_worker": "both cameras and all three formats confirm CUDA hardware diagnostics, valid bgr8 and matching headers",
+    "logger_services": "logger enumeration and level adjustment passed",
+    "gpu_ros_log": "evidence/hardware-decoding-jammy-gpu-ros.log",
+    "acceptance_boundary": "Ubuntu22 ROS-source recipe and common FFmpeg/GStreamer/OpenSSL compatibility; not a matched L4T build or Jetson hardware test"
+  },
+  "simulated_faults": [
+    "hardware open failure",
+    "runtime failure and next hardware selection",
+    "all hardware failures fall back to CPU",
+    "30-second cooldown and recovery",
+    "corrupt input does not blacklist hardware",
+    "resolution/parameter changes re-probe immediately",
+    "async final frame without new input",
+    "async failure retry without new input",
+    "bounded pending context/stall recovery",
+    "reset discards old output and generation blocks stale publication"
+  ],
+  "sdk_original_hashes": {
+    "checked": 106,
+    "unchanged": true
+  },
+  "static_checks": [
+    "clang-format 18.1.8 on touched C++ files",
+    "actionlint 1.7.12 on workflows",
+    "Python/XML/YAML syntax",
+    "four hardware Compose overrides",
+    "entrypoint bash syntax",
+    "git diff --check"
+  ],
+  "not_accepted_on_hardware": [
+    "real Odin2 streams and firmware profiles",
+    "native ARM64 performance",
+    "Intel/AMD VAAPI",
+    "QSV",
+    "V4L2 M2M",
+    "VDPAU",
+    "JetPack5/6 matched L4T builds and hardware decoding",
+    "real device removal/faults",
+    "sustained hardware load and resource release"
+  ],
+  "publication": "not performed",
+  "v4l2_device_selection_limit": "Legacy FFmpeg wrapper exposes no per-device selection option; delegates scanning to FFmpeg and reports auto honestly",
+  "ffmpeg_only_build": {
+    "status": "passed",
+    "architecture": "amd64",
+    "option": "ODIN_DRIVER_GSTREAMER=OFF"
+  },
+  "record_scope": "Historical validation of the complete local implementation including excluded driver tests and test build configuration; not CI results for this selective production commit",
+  "commit_exclusions": [
+    "test/",
+    "driver test build/dependency/CI configuration",
+    "docs/evidence/gpu-ros-validation.py",
+    "SDK compiled artifacts and compile_commands.json"
+  ],
+  "sdk_test_included": "sdk_api/sample/https_client (standalone https_client_test, original source retained)"
+}

@@ -5,7 +5,6 @@
 /output/
 __pycache__/
 *.pyc
-/test//sdk_api/build/
+/sdk_api/build/
 /sdk_api/lib/
 /sdk_api/compile_commands.json
-/sdk_api/sample/https_client/

@@ -1,10 +1,12 @@
 # 验证记录与实机验收
 
-本轮验证日期：2026-10-14。功能验收使用模拟设备、FFmpeg 生成的16×16协议样例、原版 SDK assembler 和容器。没有接入真实 Odin2、ARM 主机或 Jetson；QEMU 结果不代表 ARM／Orin 性能。
+基础驱动验证日期：2026-10-14；以下16项测试与镜像指纹为自动硬解变更前的记录。功能验收使用模拟设备、FFmpeg 生成的16×16协议样例、原版 SDK assembler 和容器。没有接入真实 Odin2、ARM 主机或 Jetson；QEMU 结果不代表 ARM／Orin 性能。
+
+自动硬解变更的测试、NVIDIA GPU 结果及尚未完成的硬件验收单独记录在 [硬件解码](hardware-decoding.md) 和 [hardware-decoding-validation.json](hardware-decoding-validation.json)，不覆盖下列已有证据。
 
 ## 此前完整本地版本的自动化覆盖
 
-以下结果来自包含测试的完整本地版本。本次生产提交排除 `test/`、测试 CMake 配置、测试依赖以及 Docker／CI 的测试执行步骤，并保留这些文件的本地版本；另排除 SDK 独立的 `https_client_test` 示例。提交后的 Docker／CI 仅执行生产构建与动态库检查，不能用以下记录声称该提交会自动运行这些测试。
+以下结果来自包含测试的完整本地版本。本次提交排除驱动 `test/`、测试构建配置、测试依赖及 Docker／CI 测试执行步骤，保留本地完整版本；包含 SDK 独立的 `https_client_test` 示例。提交后的 Docker／CI 仅执行生产构建与动态库检查。
 
 `test/driver_tests.cpp`：16项 gtest，涵盖点云字段／缩放／RGBA／NaN／空包、SI IMU、Odom quaternion 与原始18项 covariance、跨通道时间映射／回退／极值／ROS跳变、双界队列、能力掩码与非相机模式拒绝、NV12校验、MJPEG/H264/H265真实软件解码、独立参数NAL／丢帧后恢复／双目解码隔离。LiveSdk额外验证不可达设备连接返回失败且不崩溃。SDK protocol 测试直接链接原版 SDK，确认IMU逐样本时间、原始点云偏移和毫米缩放、四格式TCP拆包组装。
 
@@ -27,7 +29,7 @@
 
 ## 生产构建复现
 
-提交后的生产构建方式见 [部署文档](deployment.md)。上述自动化覆盖需要另行保留的本地测试版本，测试文件及其构建配置不随本次提交交付。
+提交后的生产构建方式见 [部署文档](deployment.md)。上述自动化覆盖需要另行保留的本地测试版本，驱动测试文件及其构建配置不随本次提交交付。
 
 ## 实机验收清单
 

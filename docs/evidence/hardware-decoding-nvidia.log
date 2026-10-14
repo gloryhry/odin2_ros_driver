@@ -1,0 +1,164 @@
+[==========] Running 29 tests from 8 test suites.
+[----------] Global test environment set-up.
+[----------] 4 tests from Conversion
+[ RUN      ] Conversion.RawUnitsFieldsAndInvalidPoints
+[       OK ] Conversion.RawUnitsFieldsAndInvalidPoints (0 ms)
+[ RUN      ] Conversion.SlamNegativeWorldCoordinatesAndColor
+[       OK ] Conversion.SlamNegativeWorldCoordinatesAndColor (0 ms)
+[ RUN      ] Conversion.ImuAndOdomPreserveSdkMeaning
+[       OK ] Conversion.ImuAndOdomPreserveSdkMeaning (0 ms)
+[ RUN      ] Conversion.EmptyAndNonfinite
+[       OK ] Conversion.EmptyAndNonfinite (0 ms)
+[----------] 4 tests from Conversion (0 ms total)
+
+[----------] 3 tests from Time
+[ RUN      ] Time.CommonMappingAndRollback
+[       OK ] Time.CommonMappingAndRollback (0 ms)
+[ RUN      ] Time.ZeroHostAndOffset
+[       OK ] Time.ZeroHostAndOffset (0 ms)
+[ RUN      ] Time.ExtremeValuesAndRosJump
+[       OK ] Time.ExtremeValuesAndRosJump (0 ms)
+[----------] 3 tests from Time (0 ms total)
+
+[----------] 1 test from Queue
+[ RUN      ] Queue.BothBoundsAndOversizedPacket
+[       OK ] Queue.BothBoundsAndOversizedPacket (0 ms)
+[----------] 1 test from Queue (0 ms total)
+
+[----------] 1 test from Config
+[ RUN      ] Config.CapabilityMaskAndUnsupportedAcquisitionParameters
+[       OK ] Config.CapabilityMaskAndUnsupportedAcquisitionParameters (0 ms)
+[----------] 1 test from Config (0 ms total)
+
+[----------] 3 tests from Decoder
+[ RUN      ] Decoder.Nv12AndMalformedPayload
+[       OK ] Decoder.Nv12AndMalformedPayload (2 ms)
+[ RUN      ] Decoder.AllEncodedFixtures
+[mjpeg @ 0x62c037f18440] Video width 16 not within range from 64 to 32768
+[mjpeg @ 0x62c037f18440] Failed setup for format cuda: hwaccel initialisation returned error.
+[mjpeg_cuvid @ 0x62c038944540] Video width 16 not within range from 64 to 32768
+[AVHWDeviceContext @ 0x62c038692dc0] libva: vaGetDriverNameByIndex() failed with unknown libva error, driver_name = (null)
+[AVHWDeviceContext @ 0x62c038692dc0] Failed to initialise VAAPI connection: -1 (unknown libva error).
+[swscaler @ 0x62c038944d00] deprecated pixel format used, make sure you did set range correctly
+[h264 @ 0x62c038944540] Video width 16 not within range from 48 to 8192
+[h264 @ 0x62c038944540] Failed setup for format cuda: hwaccel initialisation returned error.
+[h264 @ 0x62c038944540] decode_slice_header error
+[h264 @ 0x62c038944540] no frame!
+[h264_cuvid @ 0x62c0383cb0c0] Video width 16 not within range from 48 to 8192
+[AVHWDeviceContext @ 0x62c0384de600] libva: vaGetDriverNameByIndex() failed with unknown libva error, driver_name = (null)
+[AVHWDeviceContext @ 0x62c0384de600] Failed to initialise VAAPI connection: -1 (unknown libva error).
+[h264_v4l2m2m @ 0x62c0383f61c0] Could not find a valid device
+[h264_v4l2m2m @ 0x62c0383f61c0] can't configure decoder
+[AVHWDeviceContext @ 0x62c038dee380] Cannot open the X11 display .
+[hevc @ 0x62c0384df500] Video width 16 not within range from 144 to 8192
+[hevc @ 0x62c0384df500] Failed setup for format cuda: hwaccel initialisation returned error.
+[hevc @ 0x62c0384df500] Error parsing NAL unit #7.
+[hevc_cuvid @ 0x62c0388ca0c0] Video width 16 not within range from 144 to 8192
+[AVHWDeviceContext @ 0x62c038dd1240] libva: vaGetDriverNameByIndex() failed with unknown libva error, driver_name = (null)
+[AVHWDeviceContext @ 0x62c038dd1240] Failed to initialise VAAPI connection: -1 (unknown libva error).
+[hevc_v4l2m2m @ 0x62c038dd0d00] Could not find a valid device
+[hevc_v4l2m2m @ 0x62c038dd0d00] can't configure decoder
+[AVHWDeviceContext @ 0x62c038e26740] Cannot open the X11 display .
+[       OK ] Decoder.AllEncodedFixtures (1143 ms)
+[ RUN      ] Decoder.SeparateParametersAndRecoveryAndStereoIsolation
+[h264 @ 0x62c038944540] Video width 16 not within range from 48 to 8192
+[h264 @ 0x62c038944540] Failed setup for format cuda: hwaccel initialisation returned error.
+[h264 @ 0x62c038944540] decode_slice_header error
+[h264 @ 0x62c038944540] no frame!
+[h264_cuvid @ 0x62c0383be640] Video width 16 not within range from 48 to 8192
+[AVHWDeviceContext @ 0x62c038197680] libva: vaGetDriverNameByIndex() failed with unknown libva error, driver_name = (null)
+[AVHWDeviceContext @ 0x62c038197680] Failed to initialise VAAPI connection: -1 (unknown libva error).
+[h264_v4l2m2m @ 0x62c0383bc780] Could not find a valid device
+[h264_v4l2m2m @ 0x62c0383bc780] can't configure decoder
+[AVHWDeviceContext @ 0x62c038e26740] Cannot open the X11 display .
+[h264 @ 0x62c038912e80] Video width 16 not within range from 48 to 8192
+[h264 @ 0x62c038912e80] Failed setup for format cuda: hwaccel initialisation returned error.
+[h264 @ 0x62c038912e80] decode_slice_header error
+[h264 @ 0x62c038912e80] no frame!
+[h264_cuvid @ 0x62c038e6db00] Video width 16 not within range from 48 to 8192
+[AVHWDeviceContext @ 0x62c038040a00] libva: vaGetDriverNameByIndex() failed with unknown libva error, driver_name = (null)
+[AVHWDeviceContext @ 0x62c038040a00] Failed to initialise VAAPI connection: -1 (unknown libva error).
+[h264_v4l2m2m @ 0x62c03861a2c0] Could not find a valid device
+[h264_v4l2m2m @ 0x62c03861a2c0] can't configure decoder
+[AVHWDeviceContext @ 0x62c038e28580] Cannot open the X11 display .
+[mjpeg @ 0x62c0386914c0] No JPEG data found in image
+[hevc @ 0x62c038ebe440] Video width 16 not within range from 144 to 8192
+[hevc @ 0x62c038ebe440] Failed setup for format cuda: hwaccel initialisation returned error.
+[hevc @ 0x62c038ebe440] Error parsing NAL unit #4.
+[hevc_cuvid @ 0x62c0382fe7c0] Video width 16 not within range from 144 to 8192
+[AVHWDeviceContext @ 0x62c038d39100] libva: vaGetDriverNameByIndex() failed with unknown libva error, driver_name = (null)
+[AVHWDeviceContext @ 0x62c038d39100] Failed to initialise VAAPI connection: -1 (unknown libva error).
+[hevc_v4l2m2m @ 0x62c038d7ea80] Could not find a valid device
+[hevc_v4l2m2m @ 0x62c038d7ea80] can't configure decoder
+[AVHWDeviceContext @ 0x62c038d39100] Cannot open the X11 display .
+[hevc @ 0x62c038843fc0] Video width 16 not within range from 144 to 8192
+[hevc @ 0x62c038843fc0] Failed setup for format cuda: hwaccel initialisation returned error.
+[hevc @ 0x62c038843fc0] Error parsing NAL unit #4.
+[hevc_cuvid @ 0x62c039149140] Video width 16 not within range from 144 to 8192
+[AVHWDeviceContext @ 0x62c038664740] libva: vaGetDriverNameByIndex() failed with unknown libva error, driver_name = (null)
+[AVHWDeviceContext @ 0x62c038664740] Failed to initialise VAAPI connection: -1 (unknown libva error).
+[hevc_v4l2m2m @ 0x62c038d7ca00] Could not find a valid device
+[hevc_v4l2m2m @ 0x62c038d7ca00] can't configure decoder
+[AVHWDeviceContext @ 0x62c0382a7500] Cannot open the X11 display .
+[mjpeg @ 0x62c03808bc40] No JPEG data found in image
+[       OK ] Decoder.SeparateParametersAndRecoveryAndStereoIsolation (1683 ms)
+[----------] 3 tests from Decoder (2828 ms total)
+
+[----------] 3 tests from SdkProtocol
+[ RUN      ] SdkProtocol.ReconstructedImuTimestamps
+[       OK ] SdkProtocol.ReconstructedImuTimestamps (0 ms)
+[ RUN      ] SdkProtocol.OriginalPointConversionAndOffset
+[       OK ] SdkProtocol.OriginalPointConversionAndOffset (0 ms)
+[ RUN      ] SdkProtocol.OriginalImageAssemblyWithTcpFragmentation
+[       OK ] SdkProtocol.OriginalImageAssemblyWithTcpFragmentation (1 ms)
+[----------] 3 tests from SdkProtocol (1 ms total)
+
+[----------] 1 test from LiveSdk
+[ RUN      ] LiveSdk.UnreachableDeviceFailsWithoutCrashing
+[2026:10:14:08:52:02][WARN][logger.cpp:log_config:28]: init loglevel 1.
+[2026:10:14:08:52:02][ERROR][TcpTransport.cpp:OpenAsClient:109]: TcpTransport::OpenAsClient: connect() failed to 127.0.0.2:60002
+[2026:10:14:08:52:02][WARN][OdinCommand.cpp:Connect:100]: OdinCommand: Heartbeat transport Open failed (port 60002)
+[2026:10:14:08:52:02][ERROR][TcpTransport.cpp:OpenAsClient:109]: TcpTransport::OpenAsClient: connect() failed to 127.0.0.2:60001
+[2026:10:14:08:52:02][ERROR][OdinCommand.cpp:Connect:142]: OdinCommand: Command transport Open failed (port 60001)
+[2026:10:14:08:52:02][ERROR][odin2.cpp:Connect:88]: Odin2Device::Connect: Command connect failed
+[2026:10:14:08:52:02][ERROR][OdinSdkImpl.cpp:ConnectDevice:232]: Device connection failed
+[       OK ] LiveSdk.UnreachableDeviceFailsWithoutCrashing (0 ms)
+[----------] 1 test from LiveSdk (0 ms total)
+
+[----------] 13 tests from HardwareDecoder
+[ RUN      ] HardwareDecoder.FirstHardwareSuccessNeverOpensCpu
+[       OK ] HardwareDecoder.FirstHardwareSuccessNeverOpensCpu (0 ms)
+[ RUN      ] HardwareDecoder.OpenAndRuntimeFailureTryOtherHardwareBeforeCpu
+[       OK ] HardwareDecoder.OpenAndRuntimeFailureTryOtherHardwareBeforeCpu (0 ms)
+[ RUN      ] HardwareDecoder.CooldownDoesNotProbeEveryFrameAndRecoversAtThirtySeconds
+[       OK ] HardwareDecoder.CooldownDoesNotProbeEveryFrameAndRecoversAtThirtySeconds (0 ms)
+[ RUN      ] HardwareDecoder.CorruptInputDoesNotBlacklistHardware
+[       OK ] HardwareDecoder.CorruptInputDoesNotBlacklistHardware (0 ms)
+[ RUN      ] HardwareDecoder.AsyncFinalFrameKeepsOriginalContextWithoutAnotherPacket
+[       OK ] HardwareDecoder.AsyncFinalFrameKeepsOriginalContextWithoutAnotherPacket (0 ms)
+[ RUN      ] HardwareDecoder.ResetDiscardsOldAsyncFramesAndReprobesAfterReconnect
+[       OK ] HardwareDecoder.ResetDiscardsOldAsyncFramesAndReprobesAfterReconnect (0 ms)
+[ RUN      ] HardwareDecoder.AsyncHardwareFailureRetriesFinalIndependentFrameWithoutNewInput
+[       OK ] HardwareDecoder.AsyncHardwareFailureRetriesFinalIndependentFrameWithoutNewInput (0 ms)
+[ RUN      ] HardwareDecoder.VideoFailureWaitsForKeyframeAndPreservesParameters
+[       OK ] HardwareDecoder.VideoFailureWaitsForKeyframeAndPreservesParameters (0 ms)
+[ RUN      ] HardwareDecoder.ReconnectAndFormatChangeClearHardwareCooldown
+[       OK ] HardwareDecoder.ReconnectAndFormatChangeClearHardwareCooldown (0 ms)
+[ RUN      ] HardwareDecoder.Nv12NeverDiscoversCodecBackends
+[swscaler @ 0x62c038944d00] Warning: data is not aligned! This can lead to a speed loss
+[       OK ] HardwareDecoder.Nv12NeverDiscoversCodecBackends (0 ms)
+[ RUN      ] HardwareDecoder.ResolutionAndParameterChangesImmediatelyReprobeHardware
+[       OK ] HardwareDecoder.ResolutionAndParameterChangesImmediatelyReprobeHardware (0 ms)
+[ RUN      ] HardwareDecoder.StalledAsyncHardwareFallsBackAndKeepsQueuesBounded
+[       OK ] HardwareDecoder.StalledAsyncHardwareFallsBackAndKeepsQueuesBounded (0 ms)
+[ RUN      ] HardwareDecoder.RealHardwareWhenExplicitlyRequested
+[swscaler @ 0x62c03b3fd880] deprecated pixel format used, make sure you did set range correctly
+hw-mjpeg.jpg: cuda/mjpeg device=0
+hw-h264.bin: cuda/h264 device=0
+hw-h265.bin: cuda/hevc device=0
+[       OK ] HardwareDecoder.RealHardwareWhenExplicitlyRequested (1145 ms)
+[----------] 13 tests from HardwareDecoder (1145 ms total)
+
+[----------] Global test environment tear-down
+[==========] 29 tests from 8 test suites ran. (3974 ms total)
+[  PASSED  ] 29 tests.

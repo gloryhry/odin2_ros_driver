@@ -34,6 +34,7 @@
 #include <filesystem>
 #include <future>
 #include <thread>
+#include <tuple>
 
 #include "odin2_ros_driver/conversion.hpp"
 
@@ -159,15 +160,20 @@ std::string cameraRoot(const std::string& topic) {
 }  // namespace
 struct DeviceDriver::Impl {
   struct Runtime {
+    explicit Runtime(const decoding::Discovery& discovery)
+        : decoder(discovery, [] { return std::chrono::steady_clock::now(); }) {}
     BoundedQueue queue;
     ros::Publisher primary, encoded, compressed, info, raw_odom;
     std::unique_ptr<camera_info_manager::CameraInfoManager> calibration;
     Decoder decoder;
+    DecoderInfo decoder_info;
     msg::ChannelStatus status;
-    bool busy = false, have_sequence = false;
+    bool busy = false, have_sequence = false, decoder_pending = false, decoder_active = false;
     uint32_t sequence = 0;
     uint64_t decode_generation = 0, decoder_seen = 0, decoder_epoch = UINT64_MAX;
     ros::WallTime last_receive, last_publish;
+    ros::WallTime last_decoded_publish, last_wire_publish;
+    std::deque<std::tuple<uint64_t, uint64_t, uint32_t>> published_packets;
   };
   ros::NodeHandle node;
   DeviceSettings cfg;
@@ -202,14 +208,15 @@ struct DeviceDriver::Impl {
   msg::DeviceConfig last_dynamic;
   bool dynamic_initializing = true;
 
-  Impl(ros::NodeHandle n, DeviceSettings c, std::shared_ptr<SdkFacade> s)
+  Impl(ros::NodeHandle n, DeviceSettings c, std::shared_ptr<SdkFacade> s,
+       decoding::Discovery discovery)
       : node(std::move(n)),
         cfg(std::move(c)),
         sdk(std::move(s)),
         clock(cfg.time_mode, cfg.time_offset_ns) {
     desired_filters = cfg.initial_filters;
     for (auto ch : channels()) {
-      auto r = std::make_unique<Runtime>();
+      auto r = std::make_unique<Runtime>(discovery);
       const auto& settings = cfg.streams.at(ch);
       r->queue.configure(settings.queue_size, settings.queue_bytes);
       r->status.channel = static_cast<uint8_t>(ch);
@@ -373,8 +380,13 @@ struct DeviceDriver::Impl {
       ++r.decode_generation;
       r.have_sequence = false;
       r.last_publish = {};
+      r.last_decoded_publish = {};
+      r.last_wire_publish = {};
+      r.published_packets.clear();
       r.last_receive = {};
+      r.decoder_info.hardware_active = false;
     }
+    data_cv.notify_all();
   }
   void disconnect() {
     {
@@ -737,21 +749,39 @@ struct DeviceDriver::Impl {
       ROS_ERROR_STREAM_THROTTLE(5, "SDK callback: " << e.what());
     }
   }
+  bool decoderWork(Channel channel, const Runtime& r) const {
+    if (!isCamera(channel))
+      return false;
+    const auto& stream = cfg.streams.at(channel);
+    return r.decoder_pending ||
+           (r.decoder_active &&
+            (!ready || !stream.enabled || !stream.publish_decoded ||
+             r.decoder_epoch != generation || r.decoder_seen != r.decode_generation));
+  }
   void workerLoop() {
     affinity(snapshot().cpu_affinity);
     size_t cursor = 0;
     while (!stopping) {
       std::optional<Envelope> value;
+      std::optional<Channel> poll_channel;
       {
         std::unique_lock<std::mutex> lock(mutex);
-        data_cv.wait(lock, [this] {
+        auto have_work = [this] {
           if (stopping)
             return true;
           for (const auto& p : streams)
-            if (!p.second->busy && !p.second->queue.empty())
+            if (!p.second->busy && (!p.second->queue.empty() || (decoderWork(p.first, *p.second) &&
+                                                                 !p.second->decoder_pending)))
               return true;
           return false;
-        });
+        };
+        bool asynchronous = false;
+        for (const auto& entry : streams)
+          asynchronous |= entry.second->decoder_pending;
+        if (asynchronous)
+          data_cv.wait_for(lock, std::chrono::milliseconds(5), have_work);
+        else
+          data_cv.wait(lock, have_work);
         if (stopping)
           break;
         for (size_t i = 0; i < channels().size(); ++i) {
@@ -763,15 +793,25 @@ struct DeviceDriver::Impl {
             cursor = (cursor + i + 1) % channels().size();
             break;
           }
+          if (!r.busy && decoderWork(c, r)) {
+            r.busy = true;
+            poll_channel = c;
+            cursor = (cursor + i + 1) % channels().size();
+            break;
+          }
         }
       }
-      if (value) {
+      if (value || poll_channel) {
+        const auto channel = value ? value->channel : *poll_channel;
         try {
-          process(*value);
+          if (value)
+            process(*value);
+          else
+            pollCamera(channel);
         } catch (const std::exception& e) {
           std::lock_guard<std::mutex> lock(mutex);
-          auto& r = *streams.at(value->channel);
-          if (isCamera(value->channel)) {
+          auto& r = *streams.at(channel);
+          if (isCamera(channel)) {
             ++r.status.decode_errors;
             ++r.decode_generation;
           } else
@@ -779,18 +819,108 @@ struct DeviceDriver::Impl {
           last_error = e.what();
         }
         std::lock_guard<std::mutex> lock(mutex);
-        streams.at(value->channel)->busy = false;
+        streams.at(channel)->busy = false;
         data_cv.notify_all();
       }
     }
   }
   void process(const Envelope& e);
+  void pollCamera(Channel);
+  void publishDecoded(Channel, std::vector<DecodedFrame>);
+  void decoderStatus(Channel);
+  void cameraPublished(Runtime&, const DecodeContext&);
   void publishStatus();
   void diagnose(diagnostic_updater::DiagnosticStatusWrapper&);
   void registerServices();
   msg::DeviceConfig dynamicSnapshot();
   void reconfigure(msg::DeviceConfig&, uint32_t);
 };
+void DeviceDriver::Impl::cameraPublished(Runtime& r, const DecodeContext& context) {
+  const auto key =
+      std::make_tuple(context.generation, context.header.stamp.toNSec(), context.header.seq);
+  if (std::find(r.published_packets.begin(), r.published_packets.end(), key) ==
+      r.published_packets.end()) {
+    ++r.status.published;
+    r.published_packets.push_back(key);
+    if (r.published_packets.size() > 128)
+      r.published_packets.pop_front();
+  }
+  r.last_publish = ros::WallTime::now();
+  r.status.last_publish_latency_ms =
+      std::max(0.0, (r.last_publish - context.received).toSec() * 1000);
+}
+void DeviceDriver::Impl::decoderStatus(Channel channel) {
+  auto& r = *streams.at(channel);
+  auto info = r.decoder.info();
+  const auto pending = r.decoder.pending();
+  std::lock_guard<std::mutex> lock(mutex);
+  if (r.decoder_info.backend != info.backend || r.decoder_info.device != info.device ||
+      r.decoder_info.hardware_active != info.hardware_active ||
+      r.decoder_info.fallback_reason != info.fallback_reason) {
+    ROS_INFO_STREAM(cfg.name << " " << channelName(channel) << ": decoder=" << info.backend
+                             << " device=" << info.device
+                             << " hardware_active=" << info.hardware_active);
+    if (!info.fallback_reason.empty())
+      ROS_WARN_STREAM(cfg.name << " " << channelName(channel) << ": " << info.fallback_reason);
+  }
+  r.decoder_info = std::move(info);
+  r.decoder_pending = pending;
+  r.decoder_active = r.decoder.active();
+}
+void DeviceDriver::Impl::publishDecoded(Channel channel, std::vector<DecodedFrame> frames) {
+  auto& r = *streams.at(channel);
+  for (auto& frame : frames) {
+    auto info = r.calibration->getCameraInfo();
+    info.header = frame.image.header;
+    if (info.K[0] == 0) {
+      info.width = frame.image.width;
+      info.height = frame.image.height;
+    }
+    std::lock_guard<std::mutex> lock(mutex);
+    const auto& stream = cfg.streams.at(channel);
+    if (stopping || !ready || !stream.enabled || !stream.publish_decoded ||
+        frame.context.generation != generation ||
+        frame.context.decode_generation != r.decode_generation)
+      continue;
+    ++r.status.decoded_frames;
+    if (stream.publish_rate > 0 && !r.last_decoded_publish.isZero() &&
+        (ros::WallTime::now() - r.last_decoded_publish).toSec() < 1 / stream.publish_rate)
+      continue;
+    if (info.width == frame.image.width && info.height == frame.image.height)
+      r.info.publish(info);
+    else
+      ROS_WARN_STREAM_THROTTLE(10, cfg.name
+                                       << " " << channelName(channel)
+                                       << ": calibration dimensions differ; CameraInfo suppressed");
+    r.primary.publish(frame.image);
+    r.last_decoded_publish = ros::WallTime::now();
+    cameraPublished(r, frame.context);
+  }
+}
+void DeviceDriver::Impl::pollCamera(Channel channel) {
+  auto& r = *streams.at(channel);
+  bool valid;
+  bool preserve;
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    const auto& stream = cfg.streams.at(channel);
+    preserve = r.decoder_epoch == generation;
+    valid = ready && stream.enabled && stream.publish_decoded && preserve &&
+            r.decoder_seen == r.decode_generation;
+  }
+  try {
+    if (valid)
+      publishDecoded(channel, r.decoder.poll());
+    else
+      r.decoder.reset(preserve);
+  } catch (const std::exception& error) {
+    r.decoder.reset(true);
+    std::lock_guard<std::mutex> lock(mutex);
+    ++r.status.decode_errors;
+    last_error = error.what();
+  }
+  decoderStatus(channel);
+}
 void DeviceDriver::Impl::process(const Envelope& e) {
   DeviceSettings settings;
   uint64_t decode_generation;
@@ -889,33 +1019,20 @@ void DeviceDriver::Impl::process(const Envelope& e) {
           r.decoder_epoch = e.generation;
         }
         try {
-          auto images = r.decoder.decode(packet, header);
-          {
-            std::lock_guard<std::mutex> lock(mutex);
-            r.status.decoded_frames += images.size();
-          }
-          for (auto& image : images) {
-            auto info = r.calibration->getCameraInfo();
-            info.header = image.header;
-            if (info.K[0] == 0) {
-              info.width = image.width;
-              info.height = image.height;
-            }
-            if (info.width == image.width && info.height == image.height)
-              publish(r.info, std::move(info));
-            else
-              ROS_WARN_STREAM_THROTTLE(
-                  10, settings.name << " " << channelName(e.channel)
-                                    << ": calibration dimensions differ; CameraInfo suppressed");
-            publish(r.primary, std::move(image));
-          }
+          DecodeContext context;
+          context.header = header;
+          context.generation = e.generation;
+          context.decode_generation = e.decode_generation;
+          context.received = e.wall_received;
+          publishDecoded(e.channel, r.decoder.submit(packet, context));
         } catch (const std::exception& error) {
           r.decoder.reset(true);
           std::lock_guard<std::mutex> lock(mutex);
           ++r.status.decode_errors;
           last_error = error.what();
-          // Preserve encoded output even when software decoding fails.
+          // Preserve encoded output even when decoding fails.
         }
+        decoderStatus(e.channel);
       }
       break;
     }
@@ -928,14 +1045,19 @@ void DeviceDriver::Impl::process(const Envelope& e) {
     return;
   if (isCamera(e.channel) && e.decode_generation != r.decode_generation)
     return;
-  if (s.publish_rate > 0 && !r.last_publish.isZero() &&
-      (ros::WallTime::now() - r.last_publish).toSec() < 1 / s.publish_rate)
+  const auto rate_time = isCamera(e.channel) ? r.last_wire_publish : r.last_publish;
+  if (s.publish_rate > 0 && !rate_time.isZero() &&
+      (ros::WallTime::now() - rate_time).toSec() < 1 / s.publish_rate)
     return;
   if (publications.empty())
     return;
   for (auto& send : publications)
     send();
-  ++r.status.published;
+  if (isCamera(e.channel)) {
+    cameraPublished(r, DecodeContext{header, e.generation, e.decode_generation, e.wall_received});
+    r.last_wire_publish = ros::WallTime::now();
+  } else
+    ++r.status.published;
   r.last_publish = ros::WallTime::now();
   r.status.last_publish_latency_ms =
       std::max(0.0, (r.last_publish - e.wall_received).toSec() * 1000);
@@ -998,6 +1120,19 @@ void DeviceDriver::Impl::diagnose(diagnostic_updater::DiagnosticStatusWrapper& d
     d.add(name + "/queue_drops", r.status.queue_drops);
     d.add(name + "/decode_errors", r.status.decode_errors);
     d.add(name + "/decoded_frames", r.status.decoded_frames);
+    if (isCamera(ch)) {
+      d.add(name + "/decoder_backend", r.decoder_info.backend);
+      d.add(name + "/decoder_device", r.decoder_info.device);
+      d.add(name + "/hardware_active", r.decoder_info.hardware_active);
+      d.add(name + "/cpu_fallback_reason", r.decoder_info.fallback_reason);
+      std::string failures;
+      for (const auto& failure : r.decoder_info.failures) {
+        if (!failures.empty())
+          failures += "; ";
+        failures += failure;
+      }
+      d.add(name + "/decoder_failures", failures);
+    }
     d.add(name + "/queue_depth", r.queue.size());
     d.add(name + "/queue_bytes", r.queue.bytes());
     d.add(name + "/invalid_packets", r.status.invalid_packets);
@@ -1466,8 +1601,9 @@ void DeviceDriver::Impl::registerServices() {
   });
 }
 DeviceDriver::DeviceDriver(ros::NodeHandle node, DeviceSettings settings,
-                           std::shared_ptr<SdkFacade> sdk)
-    : impl_(std::make_unique<Impl>(std::move(node), std::move(settings), std::move(sdk))) {}
+                           std::shared_ptr<SdkFacade> sdk, decoding::Discovery discovery)
+    : impl_(std::make_unique<Impl>(std::move(node), std::move(settings), std::move(sdk),
+                                   std::move(discovery))) {}
 DeviceDriver::~DeviceDriver() = default;
 void DeviceDriver::start() {
   impl_->start();
@@ -1475,14 +1611,16 @@ void DeviceDriver::start() {
 void DeviceDriver::stop() {
   impl_->stop();
 }
-int runDriver(int argc, char** argv, std::shared_ptr<SdkFacade> sdk) {
+int runDriver(int argc, char** argv, std::shared_ptr<SdkFacade> sdk,
+              decoding::Discovery discovery) {
   ros::init(argc, argv, "odin2_driver");
   ros::NodeHandle private_node("~"), root;
   try {
     auto configs = loadConfig(private_node);
     std::vector<std::unique_ptr<DeviceDriver>> devices;
     for (auto& cfg : configs)
-      devices.push_back(std::make_unique<DeviceDriver>(ros::NodeHandle(root, cfg.name), cfg, sdk));
+      devices.push_back(
+          std::make_unique<DeviceDriver>(ros::NodeHandle(root, cfg.name), cfg, sdk, discovery));
     for (auto& device : devices)
       device->start();
     ros::AsyncSpinner spinner(4);

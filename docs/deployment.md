@@ -4,12 +4,12 @@
 
 | 平台 | 构建／运行选择 | 验证边界 |
 |---|---|---|
-| x86_64 | Ubuntu20／ROS Noetic 原生或 linux/amd64 镜像 | 本轮容器编译与模拟验收 |
+| x86_64 | Ubuntu20／ROS Noetic 原生或 linux/amd64 镜像 | 容器编译、模拟验收及 NVIDIA 合成码流硬解；真实 Odin2 待验收 |
 | ARM64 | Ubuntu20 原生或 linux/arm64 镜像 | 本轮 QEMU 编译／模拟验收；实际 ARM CPU 性能待验证 |
-| Orin JetPack5 | 通用 linux/arm64 镜像，host 网络 | CPU 解码，无 CUDA 依赖；实际 Jetson 待验收 |
-| Orin JetPack6 | Ubuntu20 容器用户空间运行在 JetPack6 主机内核上 | 不在 Ubuntu22 主机原生安装 Noetic；实际 Jetson 待验收 |
+| Orin JetPack5 | 通用或 JetPack 专用 ARM64 镜像，host 网络 | JetPack 专用镜像使用 nvv4l2decoder；实际 Jetson 待验收 |
+| Orin JetPack6 | 专用 Ubuntu22 容器内源码构建 ROS Noetic | 匹配 L4T 库与插件；实际 Jetson 待验收 |
 
-同架构发布镜像不启用 `-march=native`、fast-math 或 Orin 专有指令。Release 允许编译器基础自动向量化；可选 LTO。CPU 亲和性只影响驱动工作／控制线程。Orin 默认配置提供较小点云队列和编码透传选项；开启两路软件视频解码前，先按能力表选择合适分辨率／fps，再测量 CPU 和丢帧。
+同架构发布镜像不启用 `-march=native`、fast-math 或 Orin 专有指令。Release 允许编译器基础自动向量化；可选 LTO。CPU 亲和性只影响驱动工作／控制线程。Orin 默认配置提供较小点云队列和编码透传选项；开启两路视频解码前，先按能力表选择合适分辨率／fps，再测量 CPU 和丢帧。
 
 ## Docker 和 Compose
 
@@ -22,7 +22,7 @@ docker buildx build --platform linux/amd64,linux/arm64 \
   -t ghcr.io/owner/repository:manual --push .
 ```
 
-Docker 是 build → install → runtime 多阶段，runtime 构建检查正式节点的动态库依赖是否完整。测试源码与测试构建配置按提交范围保留在本地，提交后的镜像构建和 CI 不执行 gtest、模拟设备集成或安装空间 smoke；此前完整本地版本的验证结果见验证文档。运行镜像不包含编译器。
+Docker 是 build → install → runtime 多阶段，runtime 构建检查正式节点的动态库依赖。驱动测试源码、测试构建配置与 Docker／CI 测试执行步骤保留在本地，提交后的镜像不执行 gtest、ROS 模拟集成或安装空间 smoke；完整本地版本的验证结果见验证文档。通用运行镜像不包含编译器；Jetson 镜像保留匹配的 L4T／ROS 基础环境。
 
 ```bash
 mkdir -p calibration output
@@ -62,7 +62,7 @@ docker buildx imagetools inspect ghcr.io/owner/repository:edge
 docker pull ghcr.io/owner/repository@sha256:YOUR_MANIFEST_DIGEST
 ```
 
-自动部署在本方案中指将镜像发布到 GHCR，不自动登录设备／重启生产容器。设备端通过 Compose pull 与 up 使用指定标签或 digest 更新。本轮已初始化 Git 仓库但未配置 remote，只实现并本地检查 workflow，没有远端发布结果。
+自动部署在本方案中指将镜像发布到 GHCR，不自动登录设备／重启生产容器。设备端通过 Compose pull 与 up 使用指定标签或 digest 更新。当前仓库未配置 Git remote，本轮只实现并本地验证 workflow，没有远端发布结果。
 
 ## Orin／网络调优
 
@@ -95,3 +95,7 @@ rosrun odin2_ros_driver benchmark.py --device odin2 --seconds 120 \
 CSV 包括墙钟、各通道 received／published／decoded_frames、序号缺口、队列丢弃／深度／字节、解码失败、最新回调到主机发布延迟、RSS、CPU 百分比及接收／发布／解码速率。CPU 百分比以一个逻辑 CPU 为100%，多核可超过100%；ROS status 每0.5秒采样，last_latency_ms 是最近包的主机处理延迟，不是所有包延迟分布、网络延迟或传感器到ROS总延迟。
 
 测量至少覆盖默认输出、双目MJPEG、H264/H265、编码透传、全通道和两设备，每种模式运行5～10分钟，保存配置、固件、网卡、系统／镜像版本、CPU频率与功耗。QEMU 数据只用于功能验证，不作为 ARM／Orin 实机性能结论。
+
+## 硬件解码部署
+
+驱动默认自动优先硬解。NVIDIA、VAAPI、V4L2 与 JetPack5/6 的镜像和 Compose 用法见 [硬件解码](hardware-decoding.md)。通用镜像未传入设备时自动使用 CPU，专用 Jetson 镜像核对主机 L4T 版本。

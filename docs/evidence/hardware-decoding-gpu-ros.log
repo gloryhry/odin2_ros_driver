@@ -1,0 +1,4 @@
+mjpeg: both cameras publish valid bgr8; diagnostics=cuda/mjpeg, hardware_active=true; encoded/image headers match
+h264: both cameras publish valid bgr8; diagnostics=cuda/h264, hardware_active=true; encoded/image headers match
+hevc: both cameras publish valid bgr8; diagnostics=cuda/hevc, hardware_active=true; encoded/image headers match
+GPU ROS worker, diagnostics and shutdown: PASS

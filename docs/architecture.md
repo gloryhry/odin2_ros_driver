@@ -19,7 +19,7 @@ flowchart LR
 - `core.hpp/config.cpp`：配置、能力验证、队列、时间映射。
 - `sdk.hpp/sdk.cpp`：完整 SDK 调用集中在 SdkFacade；生产用 LiveSdk，测试注入 MockSdk，不修改供应商代码。
 - `conversion.cpp`：直接构建 PointCloud2，避免引入 PCL；消息单位、字段与 frame 转换。
-- `decoder.cpp`：FFmpeg 单线程软件解码与 swscale 色彩转换，各相机持有独立上下文和参数集。
+- `decoder.cpp`：后端选择、参数集与参考帧恢复；FFmpeg／Jetson GStreamer 自动硬解与 CPU 回退，各相机持有独立上下文。
 - `driver.cpp`：设备生命周期、管理服务、动态配置、队列调度、状态／诊断、异步文件任务。
 
 ## 生命周期与线程
@@ -38,7 +38,7 @@ SDK 回调只复制包、记录必要统计、映射时间并入队，不作解�
 
 H264／H265 接收 Annex B 码流，用实际 NAL 判断随机接入帧，不把 SDK 的 SPS 标记直接作为恢复依据。分别缓存 SPS/PPS 或 VPS/SPS/PPS，支持参数 NAL 单独到达。SDK 帧号缺口、驱动队列丢弃或解码失败时重置参考状态，保留本连接参数并等待 IDR／HEVC 随机接入帧；设备／时钟 generation 变化清空旧参数。双目参数与参考帧完全独立。
 
-限频仍解码所有视频包，然后抑制过快 ROS 输出，避免解码参考链因主机限频断裂。FFmpeg 输出帧通过设备 timestamp 关联原 header，保留少量延迟输出映射。即使解码失败，已配置的 encoded 输出仍可发布。CPU 解码一次包可能输出0或多帧，因此 `published` 与 `decoded_frames` 意义不同。
+限频仍解码所有视频包，然后抑制过快 ROS 输出，避免解码参考链因主机限频断裂。解码输出通过输入 token 关联原 header 和 generation；未完成映射有界，异步结果在无新包时仍被轮询。即使解码失败，已配置的 encoded 输出仍可发布。解码一次包可能输出0或多帧，因此 `published` 与 `decoded_frames` 意义不同。
 
 ## 已确认的 SDK 行为与封装处理
 
@@ -53,7 +53,7 @@ H264／H265 接收 Annex B 码流，用实际 NAL 判断随机接入帧，不把
 | 四元数为 x,y,z,w；Odom covariance 仅18项 | 标准消息校验／归一化，用用户36项；自定义消息保留原始18项和原四元数 |
 | StartStream 只为相机接收 acquisition mode | 拒绝非相机采集宽高、fps、format |
 | 能力格式可为位掩码 | 验证所选单一位及模式组合，拒绝 unknown=255 作为有效支持 |
-| H264 有专用组装；H265 走通用图像组装 | 按设备能力启用 H265，EncodedFrame 保留格式，软件 HEVC 解码 |
+| H264 有专用组装；H265 走通用图像组装 | 按设备能力启用 H265，EncodedFrame 保留格式，自动优先硬件 HEVC 解码 |
 | StartTelemetry 在一些失败分支仍可能返回 kOk | 同时查询订阅并观测真实到达；无数据告警 |
 | 遥测无专用停止接口 | 切换启停受控重连，释放旧订阅上下文 |
 | SDK telemetry JSON 解析支持的字段有限，schema/版本存在差异 | 发布 SDK 已解析的全部结构化字段；字段为0不等于已证明设备测量为0；需实机核对固件 schema |
@@ -64,6 +64,8 @@ H264／H265 接收 Annex B 码流，用实际 NAL 判断随机接入帧，不把
 
 ## 构建与版权交付
 
-通过 add_subdirectory 在 Catkin build 下构建 SDK，ODIN_BUILD_SAMPLES=OFF，SDK 输出重定向到 devel/lib；安装保留完整 SO 版本链和公共头文件。驱动／节点设置相对 `$ORIGIN` RPATH，并依靠标准 Catkin setup 配置安装空间。runtime smoke 在移动到 `/opt/odin2` 后执行，检查动态库、Python 消息和真实 SDK 节点状态发布。
+通过 add_subdirectory 在 Catkin build 下构建 SDK，ODIN_BUILD_SAMPLES=OFF，SDK 输出重定向到 devel/lib；安装保留完整 SO 版本链和公共头文件。驱动／节点设置相对 `$ORIGIN` RPATH，并依靠标准 Catkin setup 配置安装空间。完整本地测试版本的 runtime smoke 在移动到 `/opt/odin2` 后检查动态库、Python 消息和真实 SDK 节点状态发布；该测试脚本保留在本地，提交后的镜像只执行动态库检查。
 
 镜像包含 SDK 与驱动对应源码包、LICENSE、第三方声明、GPL-2 文本及 build-info.txt。源码 archive 和编译脚本对应镜像构建输入；CI OCI revision 标签保存提交版本，provenance/SBOM 保存构建来源与依赖。SDK 原许可缺失不由驱动代为授权，详见 THIRD_PARTY_NOTICES.md。
+
+硬件后端、异步结果轮询与回退机制见 [硬件解码](hardware-decoding.md)。解码结果与编码透传分别限频，以原始 SDK 包去重统计 published，防止异步输出重复计数。

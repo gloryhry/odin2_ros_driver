@@ -1,0 +1,4 @@
+services:
+  odin2:
+    devices:
+      - /dev/dri:/dev/dri

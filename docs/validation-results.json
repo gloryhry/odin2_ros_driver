@@ -35,11 +35,12 @@
   },
   "hardware_validation": "pending for Odin2, native ARM64 and Jetson Orin",
   "ghcr_publish": "not performed; workflow implemented, no Git remote in workspace",
-  "record_scope": "Historical validation of full local implementation including excluded tests; not CI results for this production commit",
+  "hardware_decoding_validation": "hardware-decoding-validation.json",
+  "record_scope": "Historical validation of full local implementation including excluded driver tests; not CI results for this selective production commit",
   "commit_exclusions": [
     "test/",
-    "test build/dependency/CI configuration",
-    "sdk_api/sample/https_client/",
+    "driver test build/dependency/CI configuration",
     "SDK compiled artifacts and compile_commands.json"
-  ]
+  ],
+  "sdk_test_included": "sdk_api/sample/https_client"
 }

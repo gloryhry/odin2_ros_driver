@@ -1,0 +1,4 @@
+services:
+  odin2:
+    devices:
+      - ${ODIN2_VIDEO_DEVICE:-/dev/video0}:${ODIN2_VIDEO_DEVICE:-/dev/video0}
