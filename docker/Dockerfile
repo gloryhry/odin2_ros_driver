@@ -5,7 +5,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ARG BUILD_JOBS=2
 ARG SOURCE_REVISION=unknown
 ARG TARGETARCH
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get -o Acquire::Retries=5 update && apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
     build-essential cmake pkg-config libeigen3-dev libssl-dev libavcodec-dev libavutil-dev libswscale-dev \
     libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-bad \
     ros-noetic-catkin ros-noetic-roscpp ros-noetic-sensor-msgs ros-noetic-nav-msgs ros-noetic-tf2-ros \
@@ -30,7 +30,7 @@ RUN source /opt/ros/noetic/setup.bash && catkin_make install && \
 ARG BASE_IMAGE=ros:noetic-ros-base
 FROM ${BASE_IMAGE} AS runtime-base
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get -o Acquire::Retries=5 update && apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
     libssl1.1 libavcodec58 libavutil56 libswscale5 \
     libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-bad \
     mesa-va-drivers \
@@ -38,8 +38,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-noetic-diagnostic-updater ros-noetic-dynamic-reconfigure ros-noetic-camera-info-manager \
     && rm -rf /var/lib/apt/lists/*
 ARG TARGETARCH
-RUN if [ "$TARGETARCH" = "amd64" ]; then apt-get update && \
-    apt-get install -y --no-install-recommends intel-media-va-driver && \
+RUN if [ "$TARGETARCH" = "amd64" ]; then apt-get -o Acquire::Retries=5 update && \
+    apt-get -o Acquire::Retries=5 install -y --no-install-recommends intel-media-va-driver && \
     rm -rf /var/lib/apt/lists/*; fi
 COPY --from=install /ws/install /opt/odin2
 COPY docker/entrypoint.sh /odin2-entrypoint.sh

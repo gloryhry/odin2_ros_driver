@@ -5,7 +5,7 @@ FROM ${L4T_BASE_IMAGE} AS ros-base
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ARG BUILD_JOBS=2
 ENV DEBIAN_FRONTEND=noninteractive ROS_DISTRO=noetic
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get -o Acquire::Retries=5 update && apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
     build-essential cmake pkg-config git curl ca-certificates gnupg libeigen3-dev libssl-dev \
     libavcodec-dev libavutil-dev libswscale-dev \
     libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
@@ -18,13 +18,13 @@ RUN source /etc/os-release && \
         | gpg --dearmor -o /usr/share/keyrings/ros-archive-keyring.gpg && \
       echo 'deb [signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros/ubuntu focal main' \
         > /etc/apt/sources.list.d/ros1.list && \
-      apt-get update && apt-get install -y --no-install-recommends \
+      apt-get -o Acquire::Retries=5 update && apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
         ros-noetic-ros-base ros-noetic-common-msgs ros-noetic-tf2-ros \
         ros-noetic-diagnostic-updater ros-noetic-dynamic-reconfigure \
         ros-noetic-camera-info-manager && \
       rm -rf /var/lib/apt/lists/*; \
     elif [ "$VERSION_CODENAME" = jammy ]; then \
-      apt-get update && apt-get install -y --no-install-recommends \
+      apt-get -o Acquire::Retries=5 update && apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
         python3-rosdep2 python3-rosinstall-generator python3-wstool && \
       rm -rf /var/lib/apt/lists/* && \
       if [ ! -f /etc/ros/rosdep/sources.list.d/20-default.list ]; then rosdep init; fi && \
@@ -35,15 +35,15 @@ RUN source /etc/os-release && \
         > noetic.rosinstall && \
       wstool init src noetic.rosinstall -j${BUILD_JOBS}; \
     else echo 'Jetson image must use Ubuntu 20.04 or 22.04' >&2; exit 1; fi
-RUN if [ -d /ros-source ]; then cd /ros-source && apt-get update && \
-    apt-get install -y --no-install-recommends python3-catkin-pkg python3-rospkg python3-rosdistro && \
+RUN if [ -d /ros-source ]; then cd /ros-source && apt-get -o Acquire::Retries=5 update && \
+    apt-get -o Acquire::Retries=5 install -y --no-install-recommends python3-catkin-pkg python3-rospkg python3-rosdistro && \
     rosdep install --from-paths src --ignore-src --rosdistro noetic --os=ubuntu:jammy \
       --skip-keys='hddtemp python3-catkin-pkg-modules python3-rospkg-modules python3-rosdistro-modules python3-rosdep-modules' -y && \
     rm -rf /var/lib/apt/lists/*; fi
 # Noetic's released log4cxx adapter predates Jammy's shared-pointer API.
 # Use its official glog backend, preserving ROS appenders and logger services.
-RUN if [ -d /ros-source ]; then apt-get update && \
-    apt-get install -y --no-install-recommends libgoogle-glog-dev && \
+RUN if [ -d /ros-source ]; then apt-get -o Acquire::Retries=5 update && \
+    apt-get -o Acquire::Retries=5 install -y --no-install-recommends libgoogle-glog-dev && \
     rm -rf /var/lib/apt/lists/*; fi
 RUN if [ -d /ros-source ]; then cd /ros-source && \
     src/catkin/bin/catkin_make_isolated --install --install-space /opt/ros/noetic \
@@ -70,11 +70,20 @@ RUN source /opt/ros/noetic/setup.bash && catkin_make install && \
     cp /ws/src/odin2_ros_driver/LICENSE /ws/install/share/odin2_ros_driver/
 # Keep the matched L4T multimedia libraries/plugins; never copy another JetPack's libraries.
 FROM ros-base AS runtime
+ARG L4T_BASE_IMAGE
 COPY --from=install /ws/install /opt/odin2
 COPY docker/entrypoint.sh /odin2-entrypoint.sh
 COPY docker/jetson-entrypoint.sh /jetson-entrypoint.sh
 RUN chmod +x /odin2-entrypoint.sh /jetson-entrypoint.sh && mkdir -p /output && \
-    dpkg-query -W -f='${Version}\n' nvidia-l4t-core > /opt/odin2/l4t-version && \
+    if l4t_version=$(dpkg-query -W -f='${Version}' nvidia-l4t-core 2>/dev/null); then \
+      printf '%s\n' "${l4t_version%%-*}"; \
+    elif [[ -r /etc/nv_tegra_release ]]; then \
+      sed -nE 's/^# R([0-9]+).*REVISION: ([0-9.]+),.*/\1.\2/p' /etc/nv_tegra_release; \
+    elif [[ "$L4T_BASE_IMAGE" =~ ^nvcr.io/nvidia/l4t-jetpack:r([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then \
+      printf '%s\n' "${BASH_REMATCH[1]}"; \
+    else echo 'Cannot determine L4T version from the base image.' >&2; exit 1; fi \
+      > /opt/odin2/l4t-version && \
+    [[ "$(cat /opt/odin2/l4t-version)" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && \
     source /opt/ros/noetic/setup.bash && source /opt/odin2/setup.bash && \
     ! ldd /opt/odin2/lib/odin2_ros_driver/odin2_node | grep -q 'not found'
 ENTRYPOINT ["/jetson-entrypoint.sh"]
