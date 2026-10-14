@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<!--
+  传感器能力表模板 (Host 侧)
+  
+  上位机收到 0x03 GetSensorCapability ACK 后，按 data_type 匹配本模板中的
+  <channel> 节点，将 TLV 解析出的字段填充到对应位置。
+  
+  字段来源:
+    - data_type:              ACK 中直接获取
+    - format:                 ACK TLV 0x01 (1B)
+    - default_resolution_id:  ACK TLV 0x02 [0]
+    - default_fps_id:         ACK TLV 0x02 [1]
+    - resolutions:            ACK TLV 0x03 (嵌套结构)
+    - name:                   本模板预定义，不从设备获取
+    - description:            本模板预定义，不从设备获取
+  
+  解析流程:
+    1. 发送 0x03 GetSensorCapability REQ
+    2. 收到 ACK，遍历 channel_count 个通道
+    3. 对每个通道，按 data_type 在本模板中查找匹配的 <channel>
+    4. 填充 format / default / resolutions
+    5. 未匹配的 data_type 视为新增通道，仅保留原始 TLV 数据
+-->
+<capability_template>
+  <!-- 点云段 -->
+  <channel data_type="0x00" name="raw_point" description="原始点云 (LiDAR)">
+    <!-- format: 由设备 TLV 0x01 填充, 期望 0x10(XYZIC) 或 0x11(XYZ) -->
+    <format value=""/>
+  </channel>
+
+  <channel data_type="0x01" name="slam_point" description="SLAM 点云">
+    <format value=""/>
+  </channel>
+
+  <!-- 图像段 -->
+  <channel data_type="0x10" name="image0" description="左目相机 (JPEG)">
+    <format value=""/>
+    <default resolution_id="" fps_id=""/>
+    <resolutions>
+      <!-- 由 TLV 0x03 填充, 示例:
+      <r id="0" width="1280" height="1088">
+        <fps value="30"/>
+      </r>
+      <r id="1" width="640" height="544">
+        <fps value="30"/>
+      </r>
+      -->
+    </resolutions>
+  </channel>
+
+  <channel data_type="0x11" name="image1" description="右目相机 (JPEG)">
+    <format value=""/>
+    <default resolution_id="" fps_id=""/>
+    <resolutions>
+    </resolutions>
+  </channel>
+
+  <!-- 惯性段 -->
+  <channel data_type="0x20" name="imu" description="IMU (加速度+角速度)">
+    <format value=""/>
+  </channel>
+
+  <!-- 导航段 -->
+  <channel data_type="0x30" name="odom" description="里程计">
+    <format value=""/>
+  </channel>
+</capability_template>

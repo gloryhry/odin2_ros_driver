@@ -1,0 +1,6 @@
+uint16 cdf_percentile
+uint16 outdoor_threshold
+---
+odin2_ros_driver/Result result
+uint16 effective_cdf_percentile
+uint16 effective_outdoor_threshold

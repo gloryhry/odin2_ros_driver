@@ -1,0 +1,12 @@
+std_msgs/Header header
+uint8 NV12=1
+uint8 MJPEG=2
+uint8 H264=4
+uint8 H265=8
+uint64 device_timestamp_ns
+uint32 frame_count
+uint8 format
+uint16 width
+uint16 height
+bool is_keyframe
+uint8[] data

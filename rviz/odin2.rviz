@@ -1,0 +1,32 @@
+Panels:
+  - Class: rviz/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Global Options:
+    Fixed Frame: odin2/lidar
+    Background Color: 40; 40; 40
+  Displays:
+    - Class: rviz/PointCloud2
+      Name: Odin2 raw points
+      Enabled: true
+      Topic: /odin2/points_raw
+      Queue Size: 2
+      Style: Points
+      Size (Pixels): 2
+      Color Transformer: Intensity
+      Channel Name: intensity
+    - Class: rviz/Image
+      Name: Left camera
+      Enabled: false
+      Image Topic: /odin2/camera0/image_raw
+    - Class: rviz/TF
+      Name: TF
+      Enabled: false
+  Views:
+    Current:
+      Class: rviz/Orbit
+      Distance: 8
+Window Geometry:
+  Width: 1280
+  Height: 800

@@ -1,0 +1,9 @@
+uint8 SEARCHING=0
+uint8 LOCKING=1
+uint8 LOCKED=2
+uint8 ERROR=3
+uint8 sync_state
+uint8 servo_state
+int64 offset_ns
+int64 path_delay_ns
+int32 freq_ppb

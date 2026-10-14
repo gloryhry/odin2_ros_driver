@@ -1,0 +1,8 @@
+uint8 channel
+---
+odin2_ros_driver/Result result
+odin2_ros_driver/StreamConfig effective
+bool subscribed
+uint16 destination_port
+uint8 resolution_id
+uint8 fps_id

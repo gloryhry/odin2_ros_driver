@@ -1,0 +1,13 @@
+uint8 DOWNLOAD=0
+uint8 UPLOAD=1
+uint8 RELOCATION_MAP=0
+uint8 CALIBRATION=1
+uint8 DEVICE_LOG=2
+uint8 FIRMWARE=3
+uint8 direction
+uint8 file_type
+string path
+uint32 timeout_ms
+---
+odin2_ros_driver/Result result
+uint64 job_id

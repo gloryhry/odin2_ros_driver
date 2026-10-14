@@ -1,0 +1,12 @@
+std_msgs/Header header
+string name
+string state
+string serial_number
+string device_ip
+string last_error
+uint64 reconnects
+uint64 clock_resets
+bool covariance_configured
+bool ptp_available
+odin2_ros_driver/PtpStatus ptp
+odin2_ros_driver/ChannelStatus[] channels

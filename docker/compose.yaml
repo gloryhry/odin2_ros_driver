@@ -1,0 +1,15 @@
+services:
+  odin2:
+    image: ${ODIN2_IMAGE:-odin2-ros-driver:local}
+    network_mode: host
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 120s
+    environment:
+      ROS_MASTER_URI: ${ROS_MASTER_URI:-http://127.0.0.1:11311}
+      ROS_IP: ${ROS_IP:?Set ROS_IP to the sensor-facing host address}
+    volumes:
+      - ../config:/config:ro
+      - ../calibration:/calibration:ro
+      - ../output:/output
+    command: [roslaunch, odin2_ros_driver, driver.launch, 'config:=/config/default.yaml']

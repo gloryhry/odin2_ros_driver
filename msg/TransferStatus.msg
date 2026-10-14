@@ -1,0 +1,9 @@
+std_msgs/Header header
+uint8 QUEUED=0
+uint8 RUNNING=1
+uint8 SUCCEEDED=2
+uint8 FAILED=3
+uint64 job_id
+uint8 state
+float32 progress
+odin2_ros_driver/Result result

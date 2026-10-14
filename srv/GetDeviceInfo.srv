@@ -1,0 +1,8 @@
+---
+odin2_ros_driver/Result result
+string serial_number
+string model
+string sdk_version
+string firmware_version
+odin2_ros_driver/NetworkConfig network
+odin2_ros_driver/SensorCapability[] capabilities

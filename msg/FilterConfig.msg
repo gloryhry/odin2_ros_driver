@@ -1,0 +1,7 @@
+bool has_confidence
+uint8 confidence_threshold
+bool has_adaptive
+uint16 cdf_percentile
+uint16 outdoor_threshold
+bool has_range
+uint16 min_depth

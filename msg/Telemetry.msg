@@ -1,0 +1,11 @@
+std_msgs/Header header
+uint64 device_timestamp_ns
+uint32 frame_count
+uint32 uptime_s
+uint32 cpu_pct
+uint32 mem_used_kb
+uint32 mem_total_kb
+uint32 mem_use_rate
+float32 load_1
+float32 load_5
+float32 load_15

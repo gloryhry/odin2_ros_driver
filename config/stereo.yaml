@@ -1,0 +1,25 @@
+devices:
+- name: odin2
+  sn: ''
+  device_ip: ''
+  host_ip: ''
+  time_mode: mapped
+  worker_threads: 2
+  streams:
+    raw_point:
+      enabled: true
+    imu:
+      enabled: true
+    telemetry:
+      enabled: true
+      transport: tcp
+    camera0:
+      enabled: true
+      format: mjpeg
+      transport: tcp
+      camera_info_url: ''
+    camera1:
+      enabled: true
+      format: mjpeg
+      transport: tcp
+      camera_info_url: ''

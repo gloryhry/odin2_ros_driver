@@ -1,0 +1,12 @@
+uint8 OK=0
+uint8 NOT_INITIALIZED=1
+uint8 INVALID_ARGUMENT=2
+uint8 SOCKET_ERROR=3
+uint8 TIMEOUT=4
+uint8 STOPPED=5
+uint8 FIRMWARE_ILLEGAL=6
+uint8 COMMUNICATION_ERROR=7
+uint8 UNKNOWN_ERROR=8
+bool success
+uint8 sdk_code
+string message

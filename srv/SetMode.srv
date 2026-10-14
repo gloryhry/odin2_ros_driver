@@ -1,0 +1,13 @@
+uint8 STANDBY=0
+uint8 NORMAL=1
+uint8 UPGRADE=2
+uint8 HDR=0
+uint8 HIGH_PEAK=1
+uint8 LOW_PEAK=2
+uint8 ADAPTIVE=3
+uint8 SYS_TICK=0
+uint8 PTP=1
+uint8 mode
+---
+odin2_ros_driver/Result result
+uint8 effective_mode

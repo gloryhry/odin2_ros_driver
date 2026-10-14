@@ -1,0 +1,7 @@
+<launch>
+  <arg name="config" default="$(find odin2_ros_driver)/config/default.yaml"/>
+  <arg name="respawn" default="false"/>
+  <node pkg="odin2_ros_driver" type="odin2_node" name="odin2_driver" output="screen" respawn="$(arg respawn)">
+    <rosparam command="load" file="$(arg config)"/>
+  </node>
+</launch>

@@ -1,0 +1,22 @@
+# Standard ROS CameraInfo format template. K=0 means UNCALIBRATED.
+# Replace dimensions and all matrices with a measured calibration before use.
+image_width: 16
+image_height: 16
+camera_name: odin2_camera_template
+distortion_model: plumb_bob
+distortion_coefficients:
+  rows: 1
+  cols: 5
+  data: [0.0, 0.0, 0.0, 0.0, 0.0]
+camera_matrix:
+  rows: 3
+  cols: 3
+  data: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+rectification_matrix:
+  rows: 3
+  cols: 3
+  data: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+projection_matrix:
+  rows: 3
+  cols: 4
+  data: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]

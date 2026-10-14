@@ -1,0 +1,29 @@
+devices:
+- name: front
+  sn: REPLACE_WITH_FRONT_SN
+  device_ip: ''
+  host_ip: ''
+  time_mode: mapped
+  worker_threads: 2
+  streams:
+    raw_point:
+      enabled: true
+    imu:
+      enabled: true
+    telemetry:
+      enabled: true
+      transport: tcp
+- name: rear
+  sn: REPLACE_WITH_REAR_SN
+  device_ip: ''
+  host_ip: ''
+  time_mode: mapped
+  worker_threads: 2
+  streams:
+    raw_point:
+      enabled: true
+    imu:
+      enabled: true
+    telemetry:
+      enabled: true
+      transport: tcp

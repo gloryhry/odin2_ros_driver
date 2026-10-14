@@ -1,0 +1,143 @@
+/*
+ * ============================================================================
+ * Linker version script for libodin_sdk.so
+ * ============================================================================
+ *
+ * Strategy: positive whitelist. Only symbols that belong to the SDK's
+ * public surface are exported; everything else (including weak STL
+ * template instantiations like std::__future_base::*, std::vector<>::_M_*,
+ * etc.) is hidden as `local`.
+ *
+ * Why this is required:
+ *   The SDK uses std::promise / std::future / std::function internally
+ *   (see sdk/src/odin_command_channel.cpp). With default visibility, the
+ *   compiler emits these STL template instantiations as "vague linkage"
+ *   weak symbols and the linker re-exports them in the .so dynamic table.
+ *   Because libodin_sdk.so appears earlier than libstdc++.so in the
+ *   NEEDED order of a downstream consumer such as a rclcpp-based ROS 2
+ *   node, the dynamic loader resolves the consumer's own std::future
+ *   calls against the SDK's copy of the vtable / methods. The two copies
+ *   are not guaranteed to be byte-identical (different optimization, LTO,
+ *   ODR edges), so the consumer ends up jumping through a NULL slot in a
+ *   partial vtable and crashes with SIGSEGV at rip=0.
+ *
+ *   Hiding the STL symbols from libodin_sdk.so's dynamic symbol table
+ *   makes the consumer fall back to libstdc++.so for its own STL calls,
+ *   which is the only correct binding.
+ *
+ * Maintenance: zero for normal API growth. The whitelist uses
+ * demangled-name wildcards that automatically cover anything in:
+ *   - odin::sdk::*               (C++ public API namespace)
+ *   - extern "C" Odin* / odin_*  (C entry points)
+ *   - logger.h C functions       (fixed set, listed explicitly)
+ * No edits are required when adding new APIs as long as they live in
+ * the odin::sdk namespace or follow the Odin* / odin_* C naming.
+ *
+ * ----------------------------------------------------------------------------
+ * libodin_sdk.so 链接版本脚本（中文说明）
+ * ----------------------------------------------------------------------------
+ * 策略：正向白名单。只有 SDK 公开 API 的符号被导出，其它（包括
+ * std::__future_base::* 等 STL 弱符号）一律 local 隐藏。
+ *
+ * 必要性：
+ *   SDK 内部使用 std::promise / std::future / std::function（见
+ *   sdk/src/odin_command_channel.cpp）。默认 visibility 下，编译器会把
+ *   这些 STL 模板实例化为 vague-linkage 弱符号，链接器把它们再导出到 .so
+ *   的动态符号表。当 libodin_sdk.so 在使用者（如基于 rclcpp 的 ROS 2
+ *   节点）的 NEEDED 列表里排在 libstdc++.so 之前时，动态链接器会把使用
+ *   者自己的 std::future 调用绑定到 SDK 这一份 vtable / 方法上。两份副本
+ *   不一定字节相同（不同优化等级、LTO、ODR 边界差异），结果就是使用者
+ *   跳到一个空槽，触发 rip=0 的 SIGSEGV。
+ *
+ *   把 STL 符号从 libodin_sdk.so 的动态符号表里隐藏掉之后，使用者会回退
+ *   到 libstdc++.so 解析自己的 STL 调用，这才是正确的绑定。
+ *
+ * 维护成本：零。白名单使用 mangled name 前缀通配，自动覆盖任何新增到
+ * odin::sdk 命名空间的函数/类，以及任何 Odin* / odin_* 命名的 C 入口。
+ * 新增公开 API 不需要修改本文件。
+ * ============================================================================
+ */
+{
+    global:
+        /*
+         * ----------------------------------------------------------------
+         * C++ public API: every symbol whose C++ name starts with
+         * "odin::sdk::". The patterns below are *mangled-name* prefixes
+         * recognized by GNU ld; they look cryptic but follow a simple
+         * rule (Itanium C++ ABI name mangling):
+         *
+         *   _Z   = mangled-symbol marker
+         *   N    = nested name (i.e. inside a namespace)
+         *   K    = const-qualified method
+         *   TI / TS / TV   = typeInfo / typeinfo String / Vtable
+         *   4odin 3sdk     = "odin" (4 chars) + "sdk" (3 chars)
+         *
+         * So:
+         *   _ZN4odin3sdk*   matches  "odin::sdk::Func(...)"
+         *   _ZNK4odin3sdk*  matches  "odin::sdk::Class::ConstMethod(...) const"
+         *   _ZTIN4odin3sdk* matches  typeinfo for odin::sdk::Class
+         *   _ZTSN4odin3sdk* matches  typeinfo string for odin::sdk::Class
+         *   _ZTVN4odin3sdk* matches  vtable for odin::sdk::Class
+         *
+         * (We tried the more readable `extern "C++" { "odin::sdk::*"; }`
+         *  syntax, but GNU ld 2.38 treats quoted patterns as literal
+         *  strings — they did not match anything in practice. The raw
+         *  mangled-prefix form below is the portable, working choice.)
+         *
+         * 中文：下面的奇怪前缀其实是 Itanium C++ ABI 的名字修饰规则，
+         * 含义如下：
+         *   _Z   = mangled 符号起始标记
+         *   N    = nested name（位于命名空间中）
+         *   K    = const 方法
+         *   TI / TS / TV   = typeInfo / typeinfo String / Vtable
+         *   4odin 3sdk     = "odin"（4 字符）+ "sdk"（3 字符）
+         * 因此 `_ZN4odin3sdk*` 就是「位于 odin::sdk 命名空间下的所有函数」，
+         * 其它前缀对应 const 方法 / typeinfo / vtable。
+         * （GNU ld 2.38 对 `extern "C++" { "odin::sdk::*"; }` 这种更易读
+         *  的写法处理为字面量匹配，实际不生效。所以这里仍然采用 mangled
+         *  前缀通配，是当前可工作且零维护成本的方案。）
+         */
+        _ZN4odin3sdk*;
+        _ZNK4odin3sdk*;
+        _ZTIN4odin3sdk*;
+        _ZTSN4odin3sdk*;
+        _ZTVN4odin3sdk*;
+
+        /*
+         * ----------------------------------------------------------------
+         * extern "C" entry points: anything starting with Odin / odin_.
+         * Covers OdinResult helpers, future odin_* C ABI, etc.
+         * extern "C" 入口点：以 Odin / odin_ 开头的所有 C 函数。
+         * ----------------------------------------------------------------
+         */
+        Odin*;
+        odin_*;
+
+        /*
+         * ----------------------------------------------------------------
+         * Fixed C logger API used by samples (see sdk/logger/logger.h).
+         * This list is small and stable; if a new logger function is
+         * ever added it must be appended here explicitly.
+         * 固定的 C logger API（见 sdk/logger/logger.h），列表稳定；
+         * 若将来新增 logger 函数需要在此处显式补充。
+         * ----------------------------------------------------------------
+         */
+        log_config;
+        logger_level;
+        logger_color;
+        g_logPrint;
+        g_enableSyslog;
+        cost_start;
+        cost_end;
+        _ts;
+
+    local:
+        /*
+         * Hide everything else, in particular weak STL template
+         * instantiations (std::*, __gnu_cxx::*, __cxxabiv1::*) that
+         * would otherwise leak through default visibility.
+         * 其余一律隐藏，重点是 std::* / __gnu_cxx::* 等会通过默认
+         * visibility 泄漏的 STL 弱符号。
+         */
+        *;
+};

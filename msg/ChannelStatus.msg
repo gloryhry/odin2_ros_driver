@@ -1,0 +1,16 @@
+uint8 channel
+bool enabled
+bool subscribed
+bool receiving
+uint64 received
+uint64 published
+uint64 sequence_gaps
+uint64 queue_drops
+uint64 decoded_frames
+uint64 decode_errors
+uint64 invalid_packets
+uint64 out_of_order
+uint32 queue_depth
+uint64 queue_bytes
+float64 last_receive_age
+float64 last_publish_latency_ms

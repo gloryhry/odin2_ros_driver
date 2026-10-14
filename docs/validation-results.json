@@ -1,0 +1,45 @@
+{
+  "date": "2026-10-14",
+  "sdk_version": "3.3.0_20260822",
+  "git_revision": null,
+  "tested_code_sha256": "206de24fbb5857a24ce10ede80b21ae4e34da3a6dd9ec61f2229ecb35c7074fc",
+  "fingerprint_scope": "src, include, msg, srv, cfg, test, scripts, docker, .github, CMakeLists.txt, package.xml",
+  "sdk_original_files_checked": 106,
+  "sdk_original_hashes_unchanged": true,
+  "static_checks": [
+    "actionlint 1.7.12",
+    "clang-format 18.1.8",
+    "YAML/XML/Python syntax",
+    "Docker Compose configuration"
+  ],
+  "amd64": {
+    "status": "passed",
+    "gtest_cases": 16,
+    "ros_integration": "passed",
+    "runtime_smoke": "passed",
+    "local_image": "odin2-ros-driver:local",
+    "local_manifest_digest": "sha256:5853cce93f0e2c76bac3160cae71af51b85eb003599c508bd8a1884b6398c449",
+    "compiler": "GCC 9.4.0",
+    "catkin_summary": "34 tests, 0 errors, 0 failures, 0 skipped"
+  },
+  "arm64": {
+    "status": "passed",
+    "execution": "QEMU via BuildKit",
+    "gtest_cases": 16,
+    "ros_integration": "passed",
+    "runtime_smoke": "passed",
+    "oci_archive": "/tmp/odin2-arm64-runtime.tar",
+    "oci_root_descriptor_digest": "sha256:a59a17b8209ae997cd0a1fed467eadbecfc482c6eec55859764fc71e721151cb",
+    "platform_manifest_digest": "sha256:a59a17b8209ae997cd0a1fed467eadbecfc482c6eec55859764fc71e721151cb",
+    "catkin_summary": "34 tests, 0 errors, 0 failures, 0 skipped"
+  },
+  "hardware_validation": "pending for Odin2, native ARM64 and Jetson Orin",
+  "ghcr_publish": "not performed; workflow implemented, no Git remote in workspace",
+  "record_scope": "Historical validation of full local implementation including excluded tests; not CI results for this production commit",
+  "commit_exclusions": [
+    "test/",
+    "test build/dependency/CI configuration",
+    "sdk_api/sample/https_client/",
+    "SDK compiled artifacts and compile_commands.json"
+  ]
+}
