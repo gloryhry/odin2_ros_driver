@@ -10,7 +10,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libavcodec-dev libavutil-dev libswscale-dev \
     libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
     gstreamer1.0-plugins-base gstreamer1.0-plugins-bad gstreamer1.0-tools \
-    python3-rosdep2 python3-rosinstall-generator python3-wstool \
     && rm -rf /var/lib/apt/lists/*
 # Noetic binaries exist for focal. On Jammy build its ROS1 dependencies from source.
 RUN source /etc/os-release && \
@@ -25,6 +24,9 @@ RUN source /etc/os-release && \
         ros-noetic-camera-info-manager && \
       rm -rf /var/lib/apt/lists/*; \
     elif [ "$VERSION_CODENAME" = jammy ]; then \
+      apt-get update && apt-get install -y --no-install-recommends \
+        python3-rosdep2 python3-rosinstall-generator python3-wstool && \
+      rm -rf /var/lib/apt/lists/* && \
       if [ ! -f /etc/ros/rosdep/sources.list.d/20-default.list ]; then rosdep init; fi && \
       rosdep update --include-eol-distros && \
       mkdir -p /ros-source && cd /ros-source && \
