@@ -18,8 +18,8 @@
 单设备自动发现只接受唯一匹配。多设备必须各自指定 SN 或 IP，推荐填写两者。发现受限时使用指定 IP；`host_ip` 是传感器可回连的网卡地址，与 ROS 远程通信使用的 `ROS_IP` 各有用途。
 
 ```bash
-# 镜像发布到 GHCR 后，替换 owner/repository
-export ODIN2_IMAGE=ghcr.io/owner/repository:edge
+# 通用镜像自动匹配 amd64 / arm64
+export ODIN2_IMAGE=ghcr.io/gloryhry/odin2_ros_driver:latest
 export ROS_MASTER_URI=http://192.168.1.100:11311
 export ROS_IP=192.168.1.100
 docker compose -f docker/compose.yaml up -d
@@ -85,6 +85,6 @@ roslaunch odin2_ros_driver rviz.launch
 
 ## CI 与版权
 
-驱动测试源码和测试构建配置保留在本地，本次提交包含 SDK 独立的 `https_client_test` 示例。GitHub Actions 在 PR 上构建两种架构并检查运行时动态库依赖；`main`、版本标签和手动触发在两架构构建成功后发布到小写的 `ghcr.io/<owner>/<repository>`。多架构 manifest 包含 `linux/amd64` 和 `linux/arm64`，详细标签和权限见部署文档。本地目录当前没有可用 Git remote，本轮没有向 GHCR 实际推送。
+驱动测试源码和测试构建配置保留在本地，本次提交包含 SDK 独立的 `https_client_test` 示例。GitHub Actions 在 PR 上构建两种架构；`main`／`master`、版本标签和手动触发发布 GHCR 镜像。通用入口 `ghcr.io/gloryhry/odin2_ros_driver:latest` 自动匹配 `linux/amd64`／`linux/arm64`；各平台镜像为同名前缀加 `-amd64:latest`、`-arm64:latest`、`-jetpack5:latest`、`-jetpack6:latest`。每次成功发布更新对应 `latest`，不再生成 `sha-xxx` 标签；源码提交号保留在 OCI 元数据中。Jetson 另保留匹配 L4T 的标签，名称、版本和权限见 [部署文档](docs/deployment.md)。
 
 [LICENSE](LICENSE) 仅覆盖新增驱动。供应商 SDK 和第三方版权保持原声明，详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。镜像携带对应 SDK／驱动源码、构建信息和第三方说明。`package.xml` 维护者地址是占位值，公开发布前请维护者填写真实联系方式；本项目不重新授予 SDK 许可。

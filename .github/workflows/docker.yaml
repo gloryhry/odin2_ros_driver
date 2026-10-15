@@ -2,13 +2,13 @@ name: ROS1 build and multi-architecture GHCR release
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, master]
     tags: ['v[0-9]*.[0-9]*.[0-9]*']
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: odin2-${{ github.workflow }}-${{ github.ref }}
+  group: odin2-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || 'publish' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   build:
@@ -82,7 +82,7 @@ jobs:
         with:
           pattern: digest-*
           path: /tmp/digests
-          merge-multiple: true
+          merge-multiple: false
       - name: Image name
         id: image
         run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
@@ -97,21 +97,36 @@ jobs:
           images: ${{ steps.image.outputs.name }}
           flavor: latest=false
           tags: |
-            type=sha,format=long
-            type=raw,value=edge,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=latest
             type=semver,pattern={{version}}
-            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-') }}
-      - name: Merge built architectures
+      - name: Publish platform images and merge architectures
         working-directory: /tmp/digests
         env:
           IMAGE: ${{ steps.image.outputs.name }}
           META: ${{ steps.meta.outputs.json }}
         run: |
+          shopt -s nullglob
           mapfile -t tags < <(jq -r '.tags[]' <<< "$META")
+          test "${#tags[@]}" -gt 0
+          sources=()
+          archs=(amd64 arm64)
+          for arch in "${archs[@]}"; do
+            digests=("digest-$arch/"*)
+            test "${#digests[@]}" -eq 1
+            digest="${digests[0]##*/}"
+            [[ "$digest" =~ ^[0-9a-f]{64}$ ]]
+            sources+=("$IMAGE@sha256:$digest")
+          done
+          for i in "${!sources[@]}"; do
+            platform_image="$IMAGE-${archs[$i]}"
+            platform_args=()
+            for tag in "${tags[@]}"; do
+              platform_args+=(-t "$platform_image:${tag#"$IMAGE:"}")
+            done
+            docker buildx imagetools create "${platform_args[@]}" "${sources[$i]}"
+            docker buildx imagetools inspect "$platform_image:latest" >> "$GITHUB_STEP_SUMMARY"
+          done
           args=()
           for tag in "${tags[@]}"; do args+=(-t "$tag"); done
-          sources=()
-          for digest in *; do sources+=("$IMAGE@sha256:$digest"); done
-          test "${#sources[@]}" -eq 2
           docker buildx imagetools create "${args[@]}" "${sources[@]}"
-          docker buildx imagetools inspect "${tags[0]}" >> "$GITHUB_STEP_SUMMARY"
+          docker buildx imagetools inspect "$IMAGE:latest" >> "$GITHUB_STEP_SUMMARY"

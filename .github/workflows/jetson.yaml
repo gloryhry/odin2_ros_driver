@@ -1,8 +1,15 @@
-name: Jetson image build
+name: Jetson image build and GHCR release
 on:
+  push:
+    branches: [main, master]
+    tags: ['v[0-9]*.[0-9]*.[0-9]*']
   workflow_dispatch:
 permissions:
   contents: read
+  packages: write
+concurrency:
+  group: odin2-${{ github.workflow }}-publish
+  cancel-in-progress: false
 jobs:
   build:
     runs-on: ubuntu-24.04-arm
@@ -10,19 +17,56 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        l4t: ['35.4.1', '36.4.0']
+        include:
+          - jetpack: '5'
+            l4t: '35.4.1'
+          - jetpack: '6'
+            l4t: '36.4.0'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
-      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+      - name: Image name
+        id: image
+        env:
+          JETPACK: ${{ matrix.jetpack }}
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}-jetpack$JETPACK" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        id: meta
+        with:
+          images: ${{ steps.image.outputs.name }}
+          flavor: latest=false
+          tags: |
+            type=raw,value=latest
+            type=raw,value=l4t${{ matrix.l4t }}
+            type=semver,pattern={{version}}
+      - name: Build and publish JetPack image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
         with:
           context: .
           file: docker/Dockerfile.jetson
           target: runtime
           platforms: linux/arm64
-          push: false
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            io.odin2.sdk.version=3.3.0_20260822
+            io.odin2.jetpack=${{ matrix.jetpack }}
+            io.odin2.l4t=${{ matrix.l4t }}
+          provenance: mode=max
+          sbom: true
           build-args: |
             BUILD_JOBS=2
             L4T_BASE_IMAGE=nvcr.io/nvidia/l4t-jetpack:r${{ matrix.l4t }}
           cache-from: type=gha,scope=odin2-jetson-${{ matrix.l4t }}
           cache-to: type=gha,mode=max,scope=odin2-jetson-${{ matrix.l4t }}
+      - name: Inspect published image
+        env:
+          IMAGE: ${{ steps.image.outputs.name }}
+        run: docker buildx imagetools inspect "$IMAGE:latest" >> "$GITHUB_STEP_SUMMARY"

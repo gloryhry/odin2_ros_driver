@@ -27,7 +27,7 @@ docker compose -f docker/compose.yaml -f docker/compose.vaapi.yaml up -d
 ODIN2_VIDEO_DEVICE=/dev/video0 docker compose -f docker/compose.yaml -f docker/compose.v4l2.yaml up -d
 ```
 
-Jetson 专用镜像使用与主机完全匹配的 NVIDIA L4T 基础镜像和插件。通用 Ubuntu20 镜像可在 Jetson 上回退 CPU，但不能承诺专用硬解。以下标签仅是示例，先读取主机 /etc/nv_tegra_release，再选匹配标签。入口核对主机与镜像 L4T 版本，不匹配时明确退出。
+Jetson 专用镜像使用与主机完全匹配的 NVIDIA L4T 基础镜像和插件。通用 Ubuntu20 镜像可在 Jetson 上回退 CPU，但不能承诺专用硬解。先读取主机 /etc/nv_tegra_release，再选择匹配的 L4T 标签；`latest` 始终指向对应 JetPack 最近成功发布的构建。入口核对主机与镜像 L4T 版本，不匹配时明确退出。
 
 ```bash
 # JetPack 5 示例（L4T 35.4.1）；默认基础镜像也是此版本。
@@ -41,7 +41,20 @@ docker build -f docker/Dockerfile.jetson --build-arg BUILD_JOBS=2 \
 docker compose -f docker/compose.yaml -f docker/compose.jetson.yaml up -d
 ```
 
-JetPack6 镜像保存 Noetic 的 source-manifest.rosinstall 供核查。Jammy 源码构建使用 rosconsole 官方 glog 日志后端，避免发行版 log4cxx 的 API 不兼容，并保留 rosout 与动态 logger level 服务；JetPack5 使用 Focal 的 Noetic 二进制包。专用镜像保留 ROS 和 NVIDIA 基础环境的工具，体积会大于通用运行镜像；不复制其他 JetPack 版本的宿主库。生产构建不需要设备，实际硬解须在匹配的 Jetson 上验收。专用镜像构建可通过 Jetson workflow 手动触发，不自动发布。
+使用 GHCR 发布的镜像时设置 Compose 的专用镜像变量：
+
+```bash
+# 主机 L4T 35.4.1：JetPack 5
+export ODIN2_JETSON_IMAGE=ghcr.io/gloryhry/odin2_ros_driver-jetpack5:l4t35.4.1
+# 主机 L4T 36.4.0：JetPack 6（选择这一项时替换上一行）
+# export ODIN2_JETSON_IMAGE=ghcr.io/gloryhry/odin2_ros_driver-jetpack6:l4t36.4.0
+docker compose -f docker/compose.yaml -f docker/compose.jetson.yaml pull
+docker compose -f docker/compose.yaml -f docker/compose.jetson.yaml up -d
+```
+
+两个仓库也分别提供 `:latest`。通用 amd64／arm64 镜像命名见 [部署文档](deployment.md)。
+
+JetPack6 镜像保存 Noetic 的 source-manifest.rosinstall 供核查。Jammy 源码构建使用 rosconsole 官方 glog 日志后端，避免发行版 log4cxx 的 API 不兼容，并保留 rosout 与动态 logger level 服务；JetPack5 使用 Focal 的 Noetic 二进制包。专用镜像保留 ROS 和 NVIDIA 基础环境的工具，体积会大于通用运行镜像；不复制其他 JetPack 版本的宿主库。生产构建不需要设备，实际硬解须在匹配的 Jetson 上验收。Jetson workflow 在 `main`／`master` 推送、版本标签和手动触发时构建，并发布对应平台的 GHCR 镜像。
 
 ## 诊断与验收
 
