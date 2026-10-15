@@ -2,12 +2,48 @@
 
 #include <logger/logger.h>
 
+#include <cstdarg>
 #include <cstdio>
 #include <map>
 #include <stdexcept>
 
 namespace odin_driver {
 namespace {
+int sdkLog(const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  const int written = std::vfprintf(stderr, format, args);
+  va_end(args);
+  std::fflush(stderr);
+  return written;
+}
+const char* sdkResultName(sdk::OdinResult code) {
+  switch (code) {
+    case sdk::OdinResult::kOk:
+      return "success";
+    case sdk::OdinResult::kNotInitialized:
+      return "not initialized or device not connected";
+    case sdk::OdinResult::kInvalidArgument:
+      return "invalid argument";
+    case sdk::OdinResult::kSocketError:
+      return "socket error";
+    case sdk::OdinResult::kTimeout:
+      return "timeout";
+    case sdk::OdinResult::kStopped:
+      return "stopped";
+    case sdk::OdinResult::kFirmwareIllegal:
+      return "invalid firmware file";
+    case sdk::OdinResult::kCommunicationError:
+      return "communication error";
+    case sdk::OdinResult::kUnknownError:
+      return "unknown error; check SDK logs for device response";
+  }
+  return "unrecognized SDK result";
+}
+std::string sdkError(sdk::OdinResult code) {
+  return std::string(sdkResultName(code)) + " (SDK result " +
+         std::to_string(static_cast<int>(code)) + ")";
+}
 std::mutex progress_mutex;
 std::map<sdk::OdinDeviceHandle, std::function<void(float)>> progress_callbacks;
 void progress(sdk::OdinDeviceHandle handle, float value, void*) {
@@ -46,7 +82,8 @@ class LiveSdk final : public SdkFacade {
     // Initialize before any API call, including failed connection/discovery logs.
     static std::once_flag logger_once;
     std::call_once(logger_once, [] {
-      if (log_config(LOG_LEVEL_WARN, std::printf) != 0)
+      // Docker stdout is fully buffered. Keep SDK device errors visible immediately.
+      if (log_config(LOG_LEVEL_WARN, sdkLog) != 0)
         throw std::runtime_error("invalid SDK LOG_LEVEL environment variable");
     });
   }
@@ -102,22 +139,26 @@ class LiveSdk final : public SdkFacade {
   Reply start(sdk::OdinDeviceHandle h, Channel c, const StreamSettings& s,
               uint32_t timeout_ms) override {
     Reply r;
-    if (!h) {
+    const auto operation = c == Channel::kTelemetry
+                               ? "StartTelemetry(" + channelName(c) + ")"
+                               : "StartStream(" + channelName(c) + ", transport=" +
+                                     (s.transport == sdk::OdinTransportMode::kTcp ? "tcp" : "udp") +
+                                     ", timeout_ms=" + std::to_string(timeout_ms) + ")";
+    if (!h)
       r.code = sdk::OdinResult::kNotInitialized;
-      return r;
-    }
-    r.code = c == Channel::kTelemetry
-                 ? sdk::StartTelemetry(h)
-                 : sdk::StartStream(h, c, s.transport, isCamera(c) ? &s.mode : nullptr, timeout_ms);
+    else
+      r.code = c == Channel::kTelemetry
+                   ? sdk::StartTelemetry(h)
+                   : sdk::StartStream(h, c, s.transport, isCamera(c) ? &s.mode : nullptr, timeout_ms);
+    if (!r.ok())
+      r.message = operation + " failed: " + sdkError(r.code);
     return r;
   }
   Reply close(sdk::OdinDeviceHandle h, Channel c) override {
     Reply r;
-    if (!h) {
-      r.code = sdk::OdinResult::kNotInitialized;
-      return r;
-    }
-    r.code = sdk::CloseStream(h, c);
+    r.code = h ? sdk::CloseStream(h, c) : sdk::OdinResult::kNotInitialized;
+    if (!r.ok())
+      r.message = "CloseStream(" + channelName(c) + ") failed: " + sdkError(r.code);
     return r;
   }
   void sync(sdk::OdinDeviceHandle h, bool on, uint32_t lag) override {
@@ -232,7 +273,7 @@ class LiveSdk final : public SdkFacade {
       }
     }
     if (!r.ok())
-      r.message = "SDK result " + std::to_string(static_cast<int>(r.code));
+      r.message = sdkError(r.code);
     return r;
   }
 };

@@ -410,28 +410,30 @@ struct DeviceDriver::Impl {
       std::lock_guard<std::mutex> lock(mutex);
       state = "discovering";
     }
-    sdk::DiscoveredDevice found;
+    auto host_ip = settings.host_ip;
     if (!settings.device_ip.empty()) {
       checkIp(settings.device_ip);
-      found.model = "ODIN2";
-      found.sn = settings.sn;
-      found.network.ip_address = settings.device_ip;
-      found.host_ip =
-          settings.host_ip.empty() ? routeAddress(settings.device_ip) : settings.host_ip;
-      checkIp(found.host_ip);
-    } else {
-      auto list = sdk->discover(1000);
-      std::vector<sdk::DiscoveredDevice> matches;
-      for (auto& d : list)
-        if ((settings.sn.empty() || d.sn == settings.sn) &&
-            (settings.host_ip.empty() || d.host_ip == settings.host_ip))
-          matches.push_back(d);
-      if (matches.size() != 1)
-        return failure(matches.empty() ? "configured device not discovered"
-                                       : "multiple devices found; configure SN or IP",
-                       sdk::OdinResult::kNotInitialized);
-      found = matches.front();
+      if (host_ip.empty())
+        host_ip = routeAddress(settings.device_ip);
+      checkIp(host_ip);
     }
+    // DeviceQuery advertises the return address used by ChannelConfig. A fixed
+    // device IP selects the target; it must not bypass this SDK handshake.
+    auto list = sdk->discover(1000);
+    std::vector<sdk::DiscoveredDevice> matches;
+    for (auto& d : list)
+      if ((settings.device_ip.empty() || d.network.ip_address == settings.device_ip) &&
+          (settings.sn.empty() || d.sn == settings.sn) &&
+          (host_ip.empty() || d.host_ip == host_ip))
+        matches.push_back(d);
+    if (matches.size() != 1)
+      return failure(matches.empty()
+                         ? "configured device not discovered (device_ip=" + settings.device_ip +
+                               ", sn=" + settings.sn + ", host_ip=" + host_ip +
+                               "); check UDP DeviceQuery on port 60001"
+                         : "multiple devices found; configure SN or IP",
+                     sdk::OdinResult::kNotInitialized);
+    const auto& found = matches.front();
     {
       std::lock_guard<std::mutex> lock(mutex);
       state = "connecting";
@@ -449,9 +451,18 @@ struct DeviceDriver::Impl {
       state = "configuring";
     }
     Command c;
+    auto execute = [&](const char* operation) {
+      auto reply = sdk->execute(handle, c);
+      if (!reply.ok()) {
+        if (reply.message.empty())
+          reply.message = "SDK result " + std::to_string(static_cast<int>(reply.code));
+        reply.message = std::string(operation) + ": " + reply.message;
+      }
+      return reply;
+    };
     c.kind = CommandKind::Capabilities;
     c.timeout_ms = settings.command_timeout_ms;
-    auto r = sdk->execute(handle, c);
+    auto r = execute("GetSensorCapability");
     if (!r.ok())
       return r;
     {
@@ -467,21 +478,21 @@ struct DeviceDriver::Impl {
     }
     c.kind = CommandKind::SetDeviceMode;
     c.mode = 0;
-    r = sdk->execute(handle, c);
+    r = execute("SetDeviceMode(standby)");
     if (!r.ok())
       return r;
     sdk->sync(handle, settings.slam_world, settings.sync_lag);
     if (settings.sensor_mode) {
       c.kind = CommandKind::SetSensorMode;
       c.mode = *settings.sensor_mode;
-      r = sdk->execute(handle, c);
+      r = execute("SetSensorMode");
       if (!r.ok())
         return r;
     }
     if (desired_filters) {
       c.kind = CommandKind::SetFilters;
       c.filters = *desired_filters;
-      r = sdk->execute(handle, c);
+      r = execute("SetFilterParam");
       if (!r.ok())
         return r;
     }
@@ -492,8 +503,12 @@ struct DeviceDriver::Impl {
       if (!s.enabled && !dependency)
         continue;
       r = sdk->start(handle, ch, s, settings.command_timeout_ms);
-      if (!r.ok())
+      if (!r.ok()) {
+        if (r.message.empty())
+          r.message = "start " + channelName(ch) + " failed (SDK result " +
+                      std::to_string(static_cast<int>(r.code)) + ")";
         return r;
+      }
       bool subscribed = true;
       if (ch == Channel::kTelemetry) {
         c.kind = CommandKind::ChannelInfo;
@@ -509,7 +524,7 @@ struct DeviceDriver::Impl {
       std::lock_guard<std::mutex> lock(mutex);
       c.mode = operating_mode;
     }
-    r = sdk->execute(handle, c);
+    r = execute("SetDeviceMode(configured mode)");
     if (!r.ok())
       return r;
     {
@@ -595,13 +610,17 @@ struct DeviceDriver::Impl {
           r = failure(e.what(), sdk::OdinResult::kUnknownError);
         }
         if (!r.ok()) {
+          if (r.message.empty())
+            r.message = "device initialization failed (SDK result " +
+                        std::to_string(static_cast<int>(r.code)) + ")";
           disconnect();
           {
             std::lock_guard<std::mutex> lock(mutex);
             state = "retrying";
             last_error = r.message;
           }
-          ROS_WARN_STREAM_THROTTLE(10, snapshot().name << ": " << r.message);
+          ROS_WARN_STREAM_THROTTLE(10, snapshot().name << ": " << r.message << "; retry in "
+                                                     << backoff << "s");
           next = std::chrono::steady_clock::now() + std::chrono::seconds(backoff);
           backoff = std::min(30u, backoff * 2);
         } else {

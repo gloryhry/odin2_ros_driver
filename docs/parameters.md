@@ -8,8 +8,8 @@
 |---|---|---|
 | `name` | `odin2` | 合法 ROS 名称，只含字母、数字、下划线；设备间唯一 |
 | `sn` | 空 | 发现过滤；多设备推荐配置真实序列号 |
-| `device_ip` | 空 | 非空时直接连接 IPv4；为空时发现并按 SN／host_ip 过滤，须唯一匹配 |
-| `host_ip` | 空 | 数据回传网卡 IPv4；直接 IP 模式下为空时按路由确定 |
+| `device_ip` | 空 | 设备查询结果中的目标 IPv4 过滤；与 SN／host_ip 同时匹配且须唯一；非空也执行 SDK 发现握手 |
+| `host_ip` | 空 | 数据回传网卡 IPv4 和发现结果过滤；指定 device_ip 时为空则按路由确定 |
 | `tf_prefix` | `name` | 非空相对前缀，设备间唯一；所有输出 frame 加此前缀 |
 | `time_mode` | `mapped` | `mapped`／`receive`／`offset`，详见下文 |
 | `time_offset_ns` | 字符串 `"0"` | 有符号 64 位纳秒偏移；**必须加引号**，ROS XMLRPC 整数仅有 32 位 |

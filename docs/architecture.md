@@ -24,7 +24,7 @@ flowchart LR
 
 ## 生命周期与线程
 
-每设备状态：disconnected → discovering → connecting → configuring → running；失败进入 retrying，退出进入 stopped。重试间隔1、2、4、8、16、30秒，成功后重置。指定 IP 跳过广播结果选择，直接用 IP 和可回传 host_ip 连接；自动发现只连接唯一配置匹配，避免多设备串流。
+每设备状态：disconnected → discovering → connecting → configuring → running；失败进入 retrying，退出进入 stopped。重试间隔1、2、4、8、16、30秒，成功后重置。所有连接（含指定 IP 和重连）先完成 SDK DeviceQuery，向设备提供数据回传主机地址，再按 IP、SN 和 host_ip 选择唯一匹配；不构造描述符绕过设备查询，避免订阅被拒绝或多设备串流。
 
 配置阶段查询能力，验证相机格式位掩码／尺寸／帧率，先 standby，再配置同步、传感器模式和滤波，订阅选中的流及内部依赖，最后恢复期望设备模式。每2秒检查命令通信和 PTP。在 normal 模式下，启动宽限10秒后，任何已启用非遥测流或世界 SLAM 的 LF 依赖10秒无数据，会触发受控重连。standby／upgrade 不因无采集数据而重连；遥测单独异常只告警，避免固件不支持遥测造成重连循环。
 

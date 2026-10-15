@@ -55,7 +55,7 @@
 
 | 现象 | 排查路径 |
 |---|---|
-| discovering／retrying | status.last_error；配置SN／IP／host_ip、广播路由，必要时直接IP |
+| discovering／retrying | status.last_error；核对SN／IP／host_ip过滤、UDP 60001设备查询广播与应答及回传路由 |
 | 能力组合拒绝 | get_device_info能力表；format是单一位，NV12必须偶数显式尺寸 |
 | subscribed=true但无数据 | 网卡回传地址、动态端口防火墙、设备模式、status.last_receive_age |
 | 遥测没启动却kOk | get_channel_config和真实到达；固件遥测订阅／JSON schema |

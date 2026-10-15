@@ -40,7 +40,7 @@ docker run --rm --network host -e ROS_IP -e ROS_MASTER_URI \
 
 Compose 使用 init、host 网络、restart unless-stopped 和120秒关闭宽限。运行用户默认为基础镜像用户，下载文件归属随其 UID；需要自定义用户时应给 ROS_HOME 与 output 目录写权限。配置与标定挂载只读，文件任务写 `/output`。不要在同一主机用不同容器重复控制同一个传感器。
 
-外部 ROS Master 还要求 ROS 节点公布的 ROS_IP／ROS_HOSTNAME 对所有订阅端可达；只设置 ROS_MASTER_URI 不足以保证数据可达。设备发现广播受限时填写 device_ip／host_ip。host 网络仅适用于 Linux 的这种部署模式，跨子网／防火墙须允许 SDK 的广播与动态 UDP/TCP 回传端口。
+外部 ROS Master 还要求 ROS 节点公布的 ROS_IP／ROS_HOSTNAME 对所有订阅端可达；只设置 ROS_MASTER_URI 不足以保证数据可达。device_ip／host_ip 用于选择设备和回传接口，不能代替 SDK 的设备查询握手。host 网络仅适用于 Linux 的这种部署模式，跨子网／防火墙须允许 SDK 的广播与动态 UDP/TCP 回传端口。
 
 ## GitHub Actions → GHCR
 
@@ -76,6 +76,23 @@ docker pull ghcr.io/gloryhry/odin2_ros_driver@sha256:YOUR_MANIFEST_DIGEST
 ```
 
 自动部署在本方案中指将镜像发布到 GHCR，不自动登录设备／重启生产容器。设备端通过 Compose pull 与 up 使用指定标签或 digest 更新。Jetson workflow 使用原生 ARM runner，按匹配的 L4T 分别构建并发布到 `-jetpack5`／`-jetpack6`。同一 workflow 的发布构建串行执行，避免不同 ref 同时覆盖 `latest`。通用镜像仅在两架构构建成功后发布。镜像构建与发布成功不代表实机硬件解码验收。
+
+## 启动失败诊断
+
+配置 `device_ip` 仍需先完成 SDK 的 UDP `DeviceQuery`（60001 端口），此请求携带设备回传数据所需的主机地址；IP、SN 和 `host_ip` 用于从发现结果中筛选唯一目标。每次重连也会重新查询。仅能 ping 通或建立 TCP 命令连接不代表订阅初始化已完成。请保证发现广播及其应答可通过设备所在接口，容器使用 host 网络。未找到目标或匹配到多个设备时，驱动报错重试，不会连接其他设备。
+
+先查看 `/odin2/status` 的 `state`、`last_error`、`reconnects` 和各通道计数。`retrying` 且 `reconnects=0` 表示初始化尚未完成。驱动会记录失败接口、通道、传输方式和 SDK 返回码；SDK 原始日志写入标准错误并及时刷新，可直接通过 `docker logs` 查看。
+
+`OdinCommand::SendStartStream: error code 1` 表示设备已应答，但拒绝了通道订阅，设备协议的 `ret_code=1` 仅表示通用失败。它与驱动中的 `SDK result 1`（SDK 未初始化或设备未连接）不是同一组错误码。应结合失败通道、设备固件版本及匹配的 SDK 协议继续排查，不能仅凭此码认定网络断开或固件版本不兼容。`algo downlink 0x40 subscribe rejected` 是可选下行通道警告，SDK 会继续初始化；启动失败应看其后的具体接口错误。
+
+需要详细 SDK 日志时，可先停止原服务，再临时运行诊断实例，避免同一设备被重复控制；诊断结束后按 Ctrl+C 并恢复原服务：
+
+```bash
+docker compose -f docker/compose.yaml stop odin2
+docker compose -f docker/compose.yaml run --rm --no-deps -e LOG_LEVEL=3 odin2
+# 诊断结束后
+docker compose -f docker/compose.yaml up -d odin2
+```
 
 ## Orin／网络调优
 
