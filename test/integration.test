@@ -1,0 +1,26 @@
+<launch>
+  <node pkg="odin2_ros_driver" type="odin2_mock_node" name="odin2_mock_driver" output="screen">
+    <rosparam param="devices">
+      - name: first
+        sn: MOCK1
+        streams:
+          raw_point: {enabled: true}
+          imu: {enabled: true}
+          odom_lf: {enabled: true}
+          odom_hf: {enabled: true}
+          tf: {enabled: true}
+          camera1: {enabled: true, format: mjpeg, width: 16, height: 16, fps: 10}
+          camera0: {enabled: true, format: nv12, width: 16, height: 16, fps: 10}
+          telemetry: {enabled: true}
+      - name: second
+        sn: MOCK2
+        slam_world: true
+        streams:
+          slam_point: {enabled: true}
+          raw_point: {enabled: true}
+          imu: {enabled: false}
+          telemetry: {enabled: false}
+    </rosparam>
+  </node>
+  <test pkg="odin2_ros_driver" type="integration.py" test-name="integration" time-limit="120"/>
+</launch>

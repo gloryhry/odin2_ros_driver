@@ -66,9 +66,9 @@ H264／H265 接收 Annex B 码流，用实际 NAL 判断随机接入帧，不把
 
 ## 构建与版权交付
 
-通过 add_subdirectory 在 Catkin build 下构建 SDK，ODIN_BUILD_SAMPLES=OFF，SDK 输出重定向到 devel/lib；安装保留完整 SO 版本链和公共头文件。驱动／节点设置相对 `$ORIGIN` RPATH，并依靠标准 Catkin setup 配置安装空间。完整本地测试版本的 runtime smoke 在移动到 `/opt/odin2` 后检查动态库、Python 消息和真实 SDK 节点状态发布；该测试脚本保留在本地，提交后的镜像只执行动态库检查。
+通过 add_subdirectory 在 Catkin build 下构建 SDK，ODIN_BUILD_SAMPLES=OFF，SDK 输出重定向到 devel/lib；安装保留完整 SO 版本链和公共头文件。驱动／节点设置相对 `$ORIGIN` RPATH，并依靠标准 Catkin setup 配置安装空间。runtime smoke 在移动到 `/opt/odin2` 后执行，检查动态库、Python 消息和真实 SDK 节点状态发布。
 
-TCP 启动兼容适配编译的是 build 目录中的 `odin2.cpp`、`OdinCommand.cpp` 副本，包含在最终 `libodin_sdk.so` 中；供应商源码包仍保存原始 SDK，驱动源码包同时交付适配 CMake 和辅助头文件，可重现该构建。
+TCP 启动兼容适配编译的是 build 目录中的 `odin2.cpp`、`OdinCommand.cpp` 副本，包含在最终 `libodin_sdk.so` 中；供应商源码包仍保存原始 SDK，驱动源码包同时交付适配 CMake 和辅助头文件，可重现该构建。`sdk_stream_tests` 通过真实 SDK 和回环 TCP 固件模拟覆盖立即回连、拒绝订阅后的监听释放与再次启动。
 
 镜像包含 SDK 与驱动对应源码包、LICENSE、第三方声明、GPL-2 文本及 build-info.txt。源码 archive 和编译脚本对应镜像构建输入；CI OCI revision 标签保存提交版本，provenance/SBOM 保存构建来源与依赖。SDK 原许可缺失不由驱动代为授权，详见 THIRD_PARTY_NOTICES.md。
 

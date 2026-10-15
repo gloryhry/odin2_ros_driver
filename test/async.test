@@ -1,0 +1,15 @@
+<launch>
+  <node pkg="odin2_ros_driver" type="odin2_mock_node" name="async_mock_driver" output="screen">
+    <env name="ODIN_TEST_ASYNC_DECODER" value="1"/>
+    <rosparam param="devices">
+      - name: async_camera
+        sn: MOCK1
+        streams:
+          raw_point: {enabled: false}
+          imu: {enabled: false}
+          telemetry: {enabled: false}
+          camera1: {enabled: true, format: mjpeg, width: 16, height: 16, fps: 10}
+    </rosparam>
+  </node>
+  <test pkg="odin2_ros_driver" type="async_integration.py" test-name="async_decoder" time-limit="30"/>
+</launch>

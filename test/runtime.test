@@ -1,0 +1,3 @@
+<launch>
+  <test pkg="odin2_ros_driver" type="runtime_tests" test-name="runtime_regressions" time-limit="90"/>
+</launch>

@@ -1,0 +1,260 @@
+{
+  "schema_version": 1,
+  "recorded_on": "2026-10-15",
+  "catalog": "docker/jetson-versions.json",
+  "note": "Build support is implemented. CI publication and target Jetson acceptance have not been run in this workspace.",
+  "versions": [
+    {
+      "l4t": "35.1.0",
+      "jetpack": "5",
+      "build": "not_run",
+      "environment_preflight": "not_run",
+      "real_hardware": "not_run",
+      "image_digest": null,
+      "evidence": []
+    },
+    {
+      "l4t": "35.2.1",
+      "jetpack": "5",
+      "build": "not_run",
+      "environment_preflight": "not_run",
+      "real_hardware": "not_run",
+      "image_digest": null,
+      "evidence": []
+    },
+    {
+      "l4t": "35.3.1",
+      "jetpack": "5",
+      "build": "not_run",
+      "environment_preflight": "not_run",
+      "real_hardware": "not_run",
+      "image_digest": null,
+      "evidence": []
+    },
+    {
+      "l4t": "35.4.1",
+      "jetpack": "5",
+      "build": "not_run",
+      "environment_preflight": "not_run",
+      "real_hardware": "not_run",
+      "image_digest": null,
+      "evidence": []
+    },
+    {
+      "l4t": "35.5.0",
+      "jetpack": "5",
+      "build": "not_run",
+      "environment_preflight": "not_run",
+      "real_hardware": "not_run",
+      "image_digest": null,
+      "evidence": []
+    },
+    {
+      "l4t": "35.6.0",
+      "jetpack": "5",
+      "build": "not_run",
+      "environment_preflight": "not_run",
+      "real_hardware": "not_run",
+      "image_digest": null,
+      "evidence": []
+    },
+    {
+      "l4t": "35.6.1",
+      "jetpack": "5",
+      "build": "not_run",
+      "environment_preflight": "not_run",
+      "real_hardware": "not_run",
+      "image_digest": null,
+      "evidence": []
+    },
+    {
+      "l4t": "35.6.2",
+      "jetpack": "5",
+      "build": "not_run",
+      "environment_preflight": "not_run",
+      "real_hardware": "not_run",
+      "image_digest": null,
+      "evidence": []
+    },
+    {
+      "l4t": "35.6.3",
+      "jetpack": "5",
+      "build": "not_run",
+      "environment_preflight": "not_run",
+      "real_hardware": "not_run",
+      "image_digest": null,
+      "evidence": []
+    },
+    {
+      "l4t": "35.6.4",
+      "jetpack": "5",
+      "build": "not_run",
+      "environment_preflight": "not_run",
+      "real_hardware": "not_run",
+      "image_digest": null,
+      "evidence": []
+    },
+    {
+      "l4t": "35.6.5",
+      "jetpack": "5",
+      "build": "not_run",
+      "environment_preflight": "not_run",
+      "real_hardware": "not_run",
+      "image_digest": null,
+      "evidence": []
+    },
+    {
+      "l4t": "36.3.0",
+      "jetpack": "6",
+      "build": "not_run",
+      "environment_preflight": "not_run",
+      "real_hardware": "not_run",
+      "image_digest": null,
+      "evidence": []
+    },
+    {
+      "l4t": "36.4.0",
+      "jetpack": "6",
+      "build": "not_run",
+      "environment_preflight": "not_run",
+      "real_hardware": "not_run",
+      "image_digest": null,
+      "evidence": []
+    },
+    {
+      "l4t": "36.4.3",
+      "jetpack": "6",
+      "build": "not_run",
+      "environment_preflight": "not_run",
+      "real_hardware": "not_run",
+      "image_digest": null,
+      "evidence": []
+    },
+    {
+      "l4t": "36.4.4",
+      "jetpack": "6",
+      "build": "not_run",
+      "environment_preflight": "not_run",
+      "real_hardware": "not_run",
+      "image_digest": null,
+      "evidence": []
+    },
+    {
+      "l4t": "36.4.7",
+      "jetpack": "6",
+      "build": "not_run",
+      "environment_preflight": "not_run",
+      "real_hardware": "not_run",
+      "image_digest": null,
+      "evidence": []
+    },
+    {
+      "l4t": "36.5.0",
+      "jetpack": "6",
+      "build": "not_run",
+      "environment_preflight": "not_run",
+      "real_hardware": "not_run",
+      "image_digest": null,
+      "evidence": []
+    },
+    {
+      "l4t": "36.5.2",
+      "jetpack": "6",
+      "build": "not_run",
+      "environment_preflight": "not_run",
+      "real_hardware": "not_run",
+      "image_digest": null,
+      "evidence": []
+    }
+  ],
+  "local_checks": [
+    {
+      "check": "NVIDIA archive download and SHA256",
+      "result": "passed",
+      "versions": 18,
+      "evidence": "docs/evidence/jetson-package-checksums.log"
+    },
+    {
+      "check": "Noetic source archive download, SHA256 and extraction",
+      "result": "passed",
+      "packages": 75,
+      "lock": "docker/noetic-sources.lock.json",
+      "command": "python3 docker/fetch-ros.py docker/noetic-sources.lock.json /tmp/odin2-jetson-locked-ros",
+      "lock_sha256": "c7b69cd3a3a9dfa609b01529c05dd0a973f34279a0c889e4f4042735be573209",
+      "evidence": "docs/evidence/jetson-source-checksums.log"
+    },
+    {
+      "check": "Python catalog/preflight/publication regression",
+      "result": "passed",
+      "tests": 20,
+      "command": "python3 test/jetson_support_test.py"
+    },
+    {
+      "check": "Focal amd64 targeted C++ and ROS regressions plus relocated install smoke",
+      "result": "passed",
+      "driver_tests": 47,
+      "runtime_tests": 11,
+      "real_hardware_test": "skipped",
+      "evidence": "docs/evidence/jetson-focal-regression.log"
+    },
+    {
+      "check": "Jammy amd64 targeted C++ and ROS regressions plus relocated install smoke",
+      "result": "passed",
+      "driver_tests": 47,
+      "runtime_tests": 11,
+      "real_hardware_test": "skipped",
+      "evidence": "docs/evidence/jetson-jammy-regression.log"
+    },
+    {
+      "check": "Workflow actionlint, shell syntax, Python syntax and merged Compose configuration",
+      "result": "passed"
+    },
+    {
+      "check": "ARM64 plugin-only package builds via BuildKit QEMU",
+      "result": "passed",
+      "versions": [
+        "35.4.1",
+        "36.4.3"
+      ],
+      "target": "jetson-plugins",
+      "evidence": "docs/evidence/jetson-plugin-packaging.log"
+    },
+    {
+      "check": "Vendor SDK tracked-file SHA256 preservation",
+      "result": "passed",
+      "files": 105
+    },
+    {
+      "check": "NVIDIA Toolkit 1.11 and 1.16 CSV mount contract source check",
+      "result": "confirmed",
+      "source": "https://github.com/NVIDIA/nvidia-container-toolkit/blob/v1.16.2/internal/modifier/csv.go",
+      "requirement": "NVIDIA_REQUIRE_JETPACK=csv-mounts=all"
+    }
+  ],
+  "local_limits": [
+    "Existing validation images lack libpcl-dev. Only the unrelated PCL test target was excluded inside temporary containers; repository CMake and CI keep it enabled.",
+    "Local amd64 checks are not the complete ARM64 runtime matrix or Jetson hardware acceptance.",
+    "No registry image was published and no target host was changed."
+  ],
+  "catalog_sha256": "c2c9e59920e62ebcc97ba9d9ac09095534b5eba6947db4eb6ac49d58d7596925",
+  "required_hardware_cases": {
+    "all_versions": [
+      "Real dual-camera MJPEG at field resolution and fps for 600 seconds",
+      "Two independent contexts for each of MJPEG/H264/H265",
+      "Image geometry/color/timestamps and counter deltas",
+      "FPS, CPU, memory, normal stop and restart"
+    ],
+    "additional_host_regression_cases": {
+      "35.6.3": [
+        "Memory pressure",
+        "Video restart",
+        "Record NVIDIA published host regression impact"
+      ],
+      "36.4.7": [
+        "Memory pressure",
+        "Video restart",
+        "Record NVIDIA published host regression impact"
+      ]
+    }
+  }
+}

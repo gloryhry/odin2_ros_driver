@@ -1,0 +1,43 @@
+ARM64 plugin-only packaging with BuildKit bundled QEMU. Both commands exited 0. No image was pushed or loaded. This does not build ROS/runtime or verify Jetson hardware.
+
+L4T 35.4.1; base=Focal catalog digest
+Command: docker buildx build --platform linux/arm64 --target jetson-plugins -f docker/Dockerfile.jetson --build-arg L4T_VERSION=35.4.1 --build-arg L4T_BASE_IMAGE=<catalog digest> .
+#5 [dependencies 2/5] ADD --chmod=644 --checksum=sha256:a41b5d356aea97a529fe27e0f7316d2f9d946d75927476cf9cf1b90637d00505 https://curl.se/ca/cacert-2026-09-25.pem /etc/ssl/certs/ca-certificates.crt
+#8 [dependencies 1/5] FROM docker.io/library/ubuntu:20.04@sha256:722ea796ac2d57eeb3627c58a582fc1acc58be51faf815e1bce1682ae5c092f7
+#5 [dependencies 2/5] ADD --chmod=644 --checksum=sha256:a41b5d356aea97a529fe27e0f7316d2f9d946d75927476cf9cf1b90637d00505 https://curl.se/ca/cacert-2026-09-25.pem /etc/ssl/certs/ca-certificates.crt
+#8 [dependencies 1/5] FROM docker.io/library/ubuntu:20.04@sha256:722ea796ac2d57eeb3627c58a582fc1acc58be51faf815e1bce1682ae5c092f7
+#9 [dependencies 2/5] ADD --chmod=644 --checksum=sha256:a41b5d356aea97a529fe27e0f7316d2f9d946d75927476cf9cf1b90637d00505 https://curl.se/ca/cacert-2026-09-25.pem /etc/ssl/certs/ca-certificates.crt
+#10 [dependencies 3/5] COPY docker/jetson-support.py docker/jetson-versions.json docker/fetch-ros.py docker/noetic-sources.lock.json /opt/odin2/jetson/
+#11 [dependencies 4/5] RUN chmod 755 /etc/ssl /etc/ssl/certs && source /etc/os-release &&     snapshot=$(sed -nE 's/.*"ubuntu_snapshot": "([^"]+)".*/\1/p' /opt/odin2/jetson/jetson-versions.json) &&     test -n "$snapshot" && rm -f /etc/apt/sources.list.d/ubuntu.sources &&     printf 'deb [check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/%s/ %s main restricted universe multiverse\n' "$snapshot" "$VERSION_CODENAME" > /etc/apt/sources.list &&     printf 'deb [check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/%s/ %s-updates main restricted universe multiverse\n' "$snapshot" "$VERSION_CODENAME" >> /etc/apt/sources.list &&     printf 'deb [check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/%s/ %s-security main restricted universe multiverse\n' "$snapshot" "$VERSION_CODENAME" >> /etc/apt/sources.list &&     echo 'APT::Update::Error-Mode "any";' > /etc/apt/apt.conf.d/99odin2-strict-update
+#12 [dependencies 5/5] RUN apt-get -o Acquire::Retries=5 update && apt-get -o Acquire::Retries=5 install -y --no-install-recommends     build-essential cmake pkg-config git curl ca-certificates gnupg libeigen3-dev libssl-dev     libavcodec-dev libavutil-dev libswscale-dev ffmpeg     libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev     gstreamer1.0-plugins-base gstreamer1.0-plugins-bad gstreamer1.0-tools     python3-yaml     && rm -rf /var/lib/apt/lists/*
+#13 [jetson-plugins 1/1] RUN python3 /opt/odin2/jetson/jetson-support.py install --l4t "35.4.1"       --base-image "docker.io/library/ubuntu:20.04@sha256:722ea796ac2d57eeb3627c58a582fc1acc58be51faf815e1bce1682ae5c092f7" --revision "unknown" &&     rm -rf /var/lib/apt/lists/*
+(Reading database ... 95%
+(Reading database ... 100%
+(Reading database ... 24613 files and directories currently installed.)
+#13 71.68 Preparing to unpack .../libgcc1_1%3a10.5.0-1ubuntu1~20.04_arm64.deb ...
+#13 71.70 Unpacking libgcc1 (1:10.5.0-1ubuntu1~20.04) ...
+#13 71.90 Setting up libgcc1 (1:10.5.0-1ubuntu1~20.04) ...
+#13 71.92 Processing triggers for libc-bin (2.31-0ubuntu9.17) ...
+#13 DONE 74.6s
+WARNING: No output specified with docker-container driver. Build result will only remain in the build cache. To push result image into registry use --push or to load image into docker use --load
+
+L4T 36.4.3; base=Jammy catalog digest
+Command: docker buildx build --platform linux/arm64 --target jetson-plugins -f docker/Dockerfile.jetson --build-arg L4T_VERSION=36.4.3 --build-arg L4T_BASE_IMAGE=<catalog digest> .
+#6 [dependencies 2/5] ADD --chmod=644 --checksum=sha256:a41b5d356aea97a529fe27e0f7316d2f9d946d75927476cf9cf1b90637d00505 https://curl.se/ca/cacert-2026-09-25.pem /etc/ssl/certs/ca-certificates.crt
+#7 [dependencies 1/5] FROM docker.io/library/ubuntu:22.04@sha256:30dfd7fe96f97c5f5ddf388ce8d098aa509644ad68fdef67244fb71b8169ffcb
+#9 [dependencies 2/5] ADD --chmod=644 --checksum=sha256:a41b5d356aea97a529fe27e0f7316d2f9d946d75927476cf9cf1b90637d00505 https://curl.se/ca/cacert-2026-09-25.pem /etc/ssl/certs/ca-certificates.crt
+#10 [dependencies 3/5] COPY docker/jetson-support.py docker/jetson-versions.json docker/fetch-ros.py docker/noetic-sources.lock.json /opt/odin2/jetson/
+#11 [dependencies 4/5] RUN chmod 755 /etc/ssl /etc/ssl/certs && source /etc/os-release &&     snapshot=$(sed -nE 's/.*"ubuntu_snapshot": "([^"]+)".*/\1/p' /opt/odin2/jetson/jetson-versions.json) &&     test -n "$snapshot" && rm -f /etc/apt/sources.list.d/ubuntu.sources &&     printf 'deb [check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/%s/ %s main restricted universe multiverse\n' "$snapshot" "$VERSION_CODENAME" > /etc/apt/sources.list &&     printf 'deb [check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/%s/ %s-updates main restricted universe multiverse\n' "$snapshot" "$VERSION_CODENAME" >> /etc/apt/sources.list &&     printf 'deb [check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/%s/ %s-security main restricted universe multiverse\n' "$snapshot" "$VERSION_CODENAME" >> /etc/apt/sources.list &&     echo 'APT::Update::Error-Mode "any";' > /etc/apt/apt.conf.d/99odin2-strict-update
+#12 [dependencies 5/5] RUN apt-get -o Acquire::Retries=5 update && apt-get -o Acquire::Retries=5 install -y --no-install-recommends     build-essential cmake pkg-config git curl ca-certificates gnupg libeigen3-dev libssl-dev     libavcodec-dev libavutil-dev libswscale-dev ffmpeg     libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev     gstreamer1.0-plugins-base gstreamer1.0-plugins-bad gstreamer1.0-tools     python3-yaml     && rm -rf /var/lib/apt/lists/*
+#6 [dependencies 2/5] ADD --chmod=644 --checksum=sha256:a41b5d356aea97a529fe27e0f7316d2f9d946d75927476cf9cf1b90637d00505 https://curl.se/ca/cacert-2026-09-25.pem /etc/ssl/certs/ca-certificates.crt
+#12 [dependencies 5/5] RUN apt-get -o Acquire::Retries=5 update && apt-get -o Acquire::Retries=5 install -y --no-install-recommends     build-essential cmake pkg-config git curl ca-certificates gnupg libeigen3-dev libssl-dev     libavcodec-dev libavutil-dev libswscale-dev ffmpeg     libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev     gstreamer1.0-plugins-base gstreamer1.0-plugins-bad gstreamer1.0-tools     python3-yaml     && rm -rf /var/lib/apt/lists/*
+#13 [jetson-plugins 1/1] RUN python3 /opt/odin2/jetson/jetson-support.py install --l4t "36.4.3"       --base-image "docker.io/library/ubuntu:22.04@sha256:30dfd7fe96f97c5f5ddf388ce8d098aa509644ad68fdef67244fb71b8169ffcb" --revision "unknown" &&     rm -rf /var/lib/apt/lists/*
+#13 47.93 libwayland-egl1 is already the newest version (1.20.0-1ubuntu0.1).
+#13 47.93 libwayland-egl1 set to manually installed.
+#13 47.93 libgstreamer-plugins-bad1.0-0 is already the newest version (1.20.3-0ubuntu1.1).
+#13 47.93 libgstreamer-plugins-bad1.0-0 set to manually installed.
+#13 47.93 libx11-6 is already the newest version (2:1.7.5-1ubuntu0.4).
+#13 47.93 libx11-6 set to manually installed.
+#13 47.93 0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+#13 DONE 50.8s
+WARNING: No output specified with docker-container driver. Build result will only remain in the build cache. To push result image into registry use --push or to load image into docker use --load

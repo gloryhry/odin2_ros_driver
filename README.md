@@ -7,7 +7,7 @@
 ## 快速启动
 
 ```bash
-# 在仓库根目录构建生产镜像，并检查运行时动态库依赖
+# 在仓库根目录构建；镜像构建会先执行自动化测试
  docker build -f docker/Dockerfile --build-arg BUILD_JOBS=4 -t odin2-ros-driver:local .
  mkdir -p calibration output
  # 修改 config/default.yaml，填写 SN，或填写 device_ip 和 host_ip
@@ -33,12 +33,12 @@ docker compose -f docker/compose.yaml up -d
 
 ```bash
 sudo apt-get update
-sudo apt-get install build-essential cmake pkg-config libeigen3-dev libssl-dev \
-  libavcodec-dev libavutil-dev libswscale-dev \
+sudo apt-get install build-essential cmake pkg-config libeigen3-dev libssl-dev libpcl-dev \
+  libavcodec-dev libavutil-dev libswscale-dev ffmpeg \
   libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
   gstreamer1.0-plugins-base gstreamer1.0-plugins-bad \
   ros-noetic-camera-info-manager ros-noetic-diagnostic-updater \
-  ros-noetic-dynamic-reconfigure ros-noetic-tf2-ros
+  ros-noetic-dynamic-reconfigure ros-noetic-tf2-ros ros-noetic-rostest
 mkdir -p ~/odin2_ws/src
 # 将当前仓库放在 ~/odin2_ws/src/odin2_ros_driver
 cd ~/odin2_ws
@@ -53,6 +53,8 @@ source install/setup.bash
 ```
 
 SDK 作为构建依赖编译，示例程序关闭，完整 `libodin_sdk.so*` 链安装到 Catkin 的 `lib`。本机专用构建可启用 `-DODIN_DRIVER_NATIVE=ON`，可选 `-DODIN_DRIVER_LTO=ON`；发布镜像禁止使用本机指令集和 fast-math。ARM32 不在本轮支持范围内。
+
+默认测试构建使用 PCL 验证点云订阅兼容性，`libpcl-dev` 仅用于测试，不增加运行时依赖。
 
 ## 配置与接口
 
@@ -87,6 +89,6 @@ roslaunch odin2_ros_driver rviz.launch
 
 ## CI 与版权
 
-驱动测试源码和测试构建配置保留在本地，本次提交包含 SDK 独立的 `https_client_test` 示例。GitHub Actions 在 PR 上构建两种架构；`main`／`master`、版本标签和手动触发发布 GHCR 镜像。通用入口 `ghcr.io/gloryhry/odin2_ros_driver:latest` 自动匹配 `linux/amd64`／`linux/arm64`；各平台镜像为同名前缀加 `-amd64:latest`、`-arm64:latest`、`-jetpack5:latest`、`-jetpack6:latest`。每次成功发布更新对应 `latest`，不再生成 `sha-xxx` 标签；源码提交号保留在 OCI 元数据中。Jetson 另保留匹配 L4T 的标签，名称、版本和权限见 [部署文档](docs/deployment.md)。
+GitHub Actions 在 PR 上构建两种架构；`main`／`master`、版本标签和手动触发发布 GHCR 镜像。通用入口 `ghcr.io/gloryhry/odin2_ros_driver:latest` 自动匹配 `linux/amd64`／`linux/arm64`；各平台镜像为同名前缀加 `-amd64:latest`、`-arm64:latest`、`-jetpack5:latest`、`-jetpack6:latest`。通用镜像更新对应 `latest`；Jetson 覆盖 18 个正式 L4T，提供明确 L4T／发布版本／提交号标签，旧 `latest` 别名保留在 35.4.1／36.4.0。Jetson 部署先选择宿主对应的标签及 digest 并运行环境预检，详见 [Jetson 部署与回滚](docs/jetson-deployment.md) 和 [部署文档](docs/deployment.md)。
 
 [LICENSE](LICENSE) 仅覆盖新增驱动。供应商 SDK 和第三方版权保持原声明，详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。镜像携带对应 SDK／驱动源码、构建信息和第三方说明。`package.xml` 维护者地址是占位值，公开发布前请维护者填写真实联系方式；本项目不重新授予 SDK 许可。

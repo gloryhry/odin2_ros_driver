@@ -1,0 +1,380 @@
+{
+  "rosdistro": "noetic",
+  "packages": [
+    {
+      "name": "actionlib/actionlib",
+      "url": "https://codeload.github.com/ros-gbp/actionlib-release/tar.gz/release/noetic/actionlib/1.14.3-1",
+      "sha256": "34dca7a2b6b90271e81e244d442b00f9e3f1b9b6cbe4b8332243c73a53c096f8"
+    },
+    {
+      "name": "catkin",
+      "url": "https://codeload.github.com/ros-gbp/catkin-release/tar.gz/release/noetic/catkin/0.8.12-1",
+      "sha256": "46a919853e969ab707bfbced8cf0cb6de6efc13ec39e75719f836330d2aa6cb6"
+    },
+    {
+      "name": "class_loader",
+      "url": "https://codeload.github.com/ros-gbp/class_loader-release/tar.gz/release/noetic/class_loader/0.5.2-1",
+      "sha256": "8957d4d0301e28d4e17d7b860b5340db9fd13648ecf7c32b3bc244f0ee2b0a51"
+    },
+    {
+      "name": "cmake_modules",
+      "url": "https://codeload.github.com/ros-gbp/cmake_modules-release/tar.gz/release/noetic/cmake_modules/0.5.2-1",
+      "sha256": "42ecd6e297a6473686ffec57f6018612732f12342fee5944f3b68293090e6ecd"
+    },
+    {
+      "name": "common_msgs/actionlib_msgs",
+      "url": "https://codeload.github.com/ros-gbp/common_msgs-release/tar.gz/release/noetic/actionlib_msgs/1.13.2-1",
+      "sha256": "7058fb769ce2f42e7c39910e5f6b431956ea5320cd3f8497d192fe63c99bb2b3"
+    },
+    {
+      "name": "common_msgs/common_msgs",
+      "url": "https://codeload.github.com/ros-gbp/common_msgs-release/tar.gz/release/noetic/common_msgs/1.13.2-1",
+      "sha256": "48aa02c1bd4a4d0673d6f2c3a2f530eac4d90ad326bd3d14481d5b19d11452c6"
+    },
+    {
+      "name": "common_msgs/diagnostic_msgs",
+      "url": "https://codeload.github.com/ros-gbp/common_msgs-release/tar.gz/release/noetic/diagnostic_msgs/1.13.2-1",
+      "sha256": "c5980953c5c1542d839fbf7a197296f565f1afb2426b9a8e5f4d2e469fb385fd"
+    },
+    {
+      "name": "common_msgs/geometry_msgs",
+      "url": "https://codeload.github.com/ros-gbp/common_msgs-release/tar.gz/release/noetic/geometry_msgs/1.13.2-1",
+      "sha256": "fd528a59a032fb6b920b7a27a4012981567b79584a8195eddb376428e99c71d7"
+    },
+    {
+      "name": "common_msgs/nav_msgs",
+      "url": "https://codeload.github.com/ros-gbp/common_msgs-release/tar.gz/release/noetic/nav_msgs/1.13.2-1",
+      "sha256": "02bb9155abe995ba423001874d0d0177b07d57fb4d6a2f4c0a4c1dd34bdc2818"
+    },
+    {
+      "name": "common_msgs/sensor_msgs",
+      "url": "https://codeload.github.com/ros-gbp/common_msgs-release/tar.gz/release/noetic/sensor_msgs/1.13.2-1",
+      "sha256": "d8409a4b438669f0b375e578a62fe6962ab0fe0450400cfdd2d668fb677b061c"
+    },
+    {
+      "name": "common_msgs/shape_msgs",
+      "url": "https://codeload.github.com/ros-gbp/common_msgs-release/tar.gz/release/noetic/shape_msgs/1.13.2-1",
+      "sha256": "73b67116866cf351187ddb763ff22e8a3000b9af7cfbeee48f6779c5338b9a84"
+    },
+    {
+      "name": "common_msgs/stereo_msgs",
+      "url": "https://codeload.github.com/ros-gbp/common_msgs-release/tar.gz/release/noetic/stereo_msgs/1.13.2-1",
+      "sha256": "2bfaae5a454799266a91bb7afffa624941a234358b5716442b84a8a6b89497a5"
+    },
+    {
+      "name": "common_msgs/trajectory_msgs",
+      "url": "https://codeload.github.com/ros-gbp/common_msgs-release/tar.gz/release/noetic/trajectory_msgs/1.13.2-1",
+      "sha256": "274cd3c31a5aa5c32a71d742064016164a7eb76502c5ba0511bd0ebeb7a1eb21"
+    },
+    {
+      "name": "common_msgs/visualization_msgs",
+      "url": "https://codeload.github.com/ros-gbp/common_msgs-release/tar.gz/release/noetic/visualization_msgs/1.13.2-1",
+      "sha256": "0e6979ea5079388785849469b9baf9e2ae85c63d849a2d9f225f5461aebe0008"
+    },
+    {
+      "name": "diagnostics/diagnostic_updater",
+      "url": "https://codeload.github.com/ros-gbp/diagnostics-release/tar.gz/release/noetic/diagnostic_updater/1.12.1-1",
+      "sha256": "9e025640f16f0ba6934b48cb83c75c05739b3775673736991fcd42897ce4d39a"
+    },
+    {
+      "name": "dynamic_reconfigure",
+      "url": "https://codeload.github.com/ros-gbp/dynamic_reconfigure-release/tar.gz/release/noetic/dynamic_reconfigure/1.7.6-1",
+      "sha256": "33d172591f80197e2564f4e57fd4bb4138da5185c036f4be29a278589623097d"
+    },
+    {
+      "name": "gencpp",
+      "url": "https://codeload.github.com/ros-gbp/gencpp-release/tar.gz/release/noetic/gencpp/0.7.2-1",
+      "sha256": "a5ad74493729294c96d29a25677ce317c0f77ad1b03f1cbe132211e0f1ba3471"
+    },
+    {
+      "name": "geneus",
+      "url": "https://codeload.github.com/tork-a/geneus-release/tar.gz/release/noetic/geneus/3.0.0-1",
+      "sha256": "ff5b138e338c71c9be13e2a426b76e274bf9eb28b3a7f9c3e48d1019816b6ba8"
+    },
+    {
+      "name": "genlisp",
+      "url": "https://codeload.github.com/ros-gbp/genlisp-release/tar.gz/release/noetic/genlisp/0.4.18-1",
+      "sha256": "a2a0af65d9e93227ac21bbf58e2ee27b02f3172523787e10165c1351ab4966c5"
+    },
+    {
+      "name": "genmsg",
+      "url": "https://codeload.github.com/ros-gbp/genmsg-release/tar.gz/release/noetic/genmsg/0.6.1-1",
+      "sha256": "9029cac5c2aa0532829debfa16cbb3810580acaa11bc315894df9cfe1d04f8ed"
+    },
+    {
+      "name": "gennodejs",
+      "url": "https://codeload.github.com/sloretz/gennodejs-release/tar.gz/release/noetic/gennodejs/2.0.2-1",
+      "sha256": "a4f42f9e0ea4aa5390032c98a0702ed33d62069ade18ee942002524b2a22e77d"
+    },
+    {
+      "name": "genpy",
+      "url": "https://codeload.github.com/ros-gbp/genpy-release/tar.gz/release/noetic/genpy/0.6.18-1",
+      "sha256": "ee1fd0962cdf96614f5523091e44c0818a297579340c13afadbd7debb6757fb8"
+    },
+    {
+      "name": "geometry2/tf2",
+      "url": "https://codeload.github.com/ros-gbp/geometry2-release/tar.gz/release/noetic/tf2/0.7.10-1",
+      "sha256": "3b4387986182e964b836145360181a67b1b1a4e6e3e4f29fe77b0ac791bbefe2"
+    },
+    {
+      "name": "geometry2/tf2_msgs",
+      "url": "https://codeload.github.com/ros-gbp/geometry2-release/tar.gz/release/noetic/tf2_msgs/0.7.10-1",
+      "sha256": "1a0b97ce6dbb84819274a4a8cb28df2f42f7f071f2955796a386d0c926986aa3"
+    },
+    {
+      "name": "geometry2/tf2_py",
+      "url": "https://codeload.github.com/ros-gbp/geometry2-release/tar.gz/release/noetic/tf2_py/0.7.10-1",
+      "sha256": "bb439acf273c908c6c4ad807ebd4bc83a04a9a68ae443ddb94a55616dc16e83d"
+    },
+    {
+      "name": "geometry2/tf2_ros",
+      "url": "https://codeload.github.com/ros-gbp/geometry2-release/tar.gz/release/noetic/tf2_ros/0.7.10-1",
+      "sha256": "7b2f0f15f6f54be2464de98174c5a9dfd17633d95c5be2cbeaa2d0e52ac33f73"
+    },
+    {
+      "name": "image_common/camera_calibration_parsers",
+      "url": "https://codeload.github.com/ros-gbp/image_common-release/tar.gz/release/noetic/camera_calibration_parsers/1.12.1-1",
+      "sha256": "40beed2aa97e6f5c09b7f675d5f2bc98dc987d9626c8c55d54ff824af8560ba0"
+    },
+    {
+      "name": "image_common/camera_info_manager",
+      "url": "https://codeload.github.com/ros-gbp/image_common-release/tar.gz/release/noetic/camera_info_manager/1.12.1-1",
+      "sha256": "eb6fbebb3802f05a602af88f612bba442eb59c3a37a39da64cd12397673511b7"
+    },
+    {
+      "name": "image_common/image_transport",
+      "url": "https://codeload.github.com/ros-gbp/image_common-release/tar.gz/release/noetic/image_transport/1.12.1-1",
+      "sha256": "76bde3dd7c5f21ee19ef60116ac6de068529552601e2bb0dfb670b16052afc2b"
+    },
+    {
+      "name": "message_generation",
+      "url": "https://codeload.github.com/ros-gbp/message_generation-release/tar.gz/release/noetic/message_generation/0.4.1-1",
+      "sha256": "5733a6180d2cd104c5cbbbcd1f20eb11b0edeb6a6253ccdcb300f550264dbde0"
+    },
+    {
+      "name": "message_runtime",
+      "url": "https://codeload.github.com/ros-gbp/message_runtime-release/tar.gz/release/noetic/message_runtime/0.4.13-1",
+      "sha256": "ed3ea8f62850d371e9f44aa764896b429b4016d3b278a760b9214bfb9d57dc35"
+    },
+    {
+      "name": "pluginlib",
+      "url": "https://codeload.github.com/ros-gbp/pluginlib-release/tar.gz/release/noetic/pluginlib/1.13.2-1",
+      "sha256": "6f66e25584144a1b0f159bff6c59ad3df11d9ad84b950b6999faec9de935e1da"
+    },
+    {
+      "name": "ros/mk",
+      "url": "https://codeload.github.com/ros-gbp/ros-release/tar.gz/release/noetic/mk/1.15.10-1",
+      "sha256": "58132962fd04d7dced58b87cb470bae211e52378f2ca005361581d1cd95b2ed2"
+    },
+    {
+      "name": "ros/ros",
+      "url": "https://codeload.github.com/ros-gbp/ros-release/tar.gz/release/noetic/ros/1.15.10-1",
+      "sha256": "49cd2fdbb2d7fa9f63cfdef4a9590d206ec79cb501c7d141b57636196e48ab8d"
+    },
+    {
+      "name": "ros/rosbash",
+      "url": "https://codeload.github.com/ros-gbp/ros-release/tar.gz/release/noetic/rosbash/1.15.10-1",
+      "sha256": "9ce99515f05899f46d9dc2ab005ff68aac76bf983c8c9cdf63258b9d8ce634f4"
+    },
+    {
+      "name": "ros/rosboost_cfg",
+      "url": "https://codeload.github.com/ros-gbp/ros-release/tar.gz/release/noetic/rosboost_cfg/1.15.10-1",
+      "sha256": "8a63fdda10dab389326fbebb848a0333e812db16e638a12474a36de52666d51b"
+    },
+    {
+      "name": "ros/rosbuild",
+      "url": "https://codeload.github.com/ros-gbp/ros-release/tar.gz/release/noetic/rosbuild/1.15.10-1",
+      "sha256": "2bc6349bdd26e0a103dbc2663612fe0aace2f9a3e4374957a411fc671f2209bb"
+    },
+    {
+      "name": "ros/rosclean",
+      "url": "https://codeload.github.com/ros-gbp/ros-release/tar.gz/release/noetic/rosclean/1.15.10-1",
+      "sha256": "3e9f2595b11e90597e099166f3a0f5181ab5e263aa3d5b49f0547384e73d944a"
+    },
+    {
+      "name": "ros/roscreate",
+      "url": "https://codeload.github.com/ros-gbp/ros-release/tar.gz/release/noetic/roscreate/1.15.10-1",
+      "sha256": "b0f1275e42d69528a798b2c4b11a11a4d256f48ff4059b95445e08ed7b58aaa8"
+    },
+    {
+      "name": "ros/roslang",
+      "url": "https://codeload.github.com/ros-gbp/ros-release/tar.gz/release/noetic/roslang/1.15.10-1",
+      "sha256": "4dbae7d390e514f3a09567218cd229ff1762f119c7146cade09dada916004d7d"
+    },
+    {
+      "name": "ros/roslib",
+      "url": "https://codeload.github.com/ros-gbp/ros-release/tar.gz/release/noetic/roslib/1.15.10-1",
+      "sha256": "1f483ee2d435dc6f1f789e1e061bc5496b7057573f906ec0d67266bd87c9b3bb"
+    },
+    {
+      "name": "ros/rosmake",
+      "url": "https://codeload.github.com/ros-gbp/ros-release/tar.gz/release/noetic/rosmake/1.15.10-1",
+      "sha256": "40e79373d39b92ed721879969770a53e422dd66e8fb5b000e438ba76a28bb1bf"
+    },
+    {
+      "name": "ros/rosunit",
+      "url": "https://codeload.github.com/ros-gbp/ros-release/tar.gz/release/noetic/rosunit/1.15.10-1",
+      "sha256": "5819cf600c35bf2634be3dac8c5f2094ca91f506e8f224d7bfbd79edf8a710be"
+    },
+    {
+      "name": "ros_comm/message_filters",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm-release/tar.gz/release/noetic/message_filters/1.17.4-1",
+      "sha256": "e922e1d03f47c3f1f32f595a2a13c2f633cdd7a9e81f6f4c3ea1a0658a587348"
+    },
+    {
+      "name": "ros_comm/ros_comm",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm-release/tar.gz/release/noetic/ros_comm/1.17.4-1",
+      "sha256": "f7f4cc792fbc98dd066000f3272916566b34e5d534dcb61e249258b0067327bd"
+    },
+    {
+      "name": "ros_comm/rosbag",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm-release/tar.gz/release/noetic/rosbag/1.17.4-1",
+      "sha256": "ce2aa7c01eaa01f0ead042c152605066faf5b180e01c2449f383b735b83263b6"
+    },
+    {
+      "name": "ros_comm/rosbag_storage",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm-release/tar.gz/release/noetic/rosbag_storage/1.17.4-1",
+      "sha256": "478b8d114353063cc3476cdd04679ab25949f078b8abfbacd15424f3ed23ddf4"
+    },
+    {
+      "name": "ros_comm/roscpp",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm-release/tar.gz/release/noetic/roscpp/1.17.4-1",
+      "sha256": "5e4d6c6e518d7a0cdbd361655c440f268656322906ce0f0b078e75586049bcd5"
+    },
+    {
+      "name": "ros_comm/rosgraph",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm-release/tar.gz/release/noetic/rosgraph/1.17.4-1",
+      "sha256": "1d3636bd16e70ac6cabf3c5e512fab1c146aad899d2985d51e72e65be6dd3c34"
+    },
+    {
+      "name": "ros_comm/roslaunch",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm-release/tar.gz/release/noetic/roslaunch/1.17.4-1",
+      "sha256": "763c0476daab5ca7f220841c8de8ef9ac56f66ad55eb68e782e9225e60f32818"
+    },
+    {
+      "name": "ros_comm/roslz4",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm-release/tar.gz/release/noetic/roslz4/1.17.4-1",
+      "sha256": "caf43d4f540d2f1e34fc7ce03496478dc113f5a2d07e0ea707b29ef93ce26a88"
+    },
+    {
+      "name": "ros_comm/rosmaster",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm-release/tar.gz/release/noetic/rosmaster/1.17.4-1",
+      "sha256": "742cbcd36413cf87fa5a18ca411bc1a80d4fbbb5681934d393da5a91d04a5ac2"
+    },
+    {
+      "name": "ros_comm/rosmsg",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm-release/tar.gz/release/noetic/rosmsg/1.17.4-1",
+      "sha256": "1eef1c4143b3bee967bad21d957ee281957df2374ca2c886f6382f91c65d193b"
+    },
+    {
+      "name": "ros_comm/rosnode",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm-release/tar.gz/release/noetic/rosnode/1.17.4-1",
+      "sha256": "cf785d069285e527fc1a7bd363018644c4c2342f35ad6783348d5b0ef7e17aa8"
+    },
+    {
+      "name": "ros_comm/rosout",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm-release/tar.gz/release/noetic/rosout/1.17.4-1",
+      "sha256": "15124c6009f0c475d1070c468f7664fff8ad6cd50bff413e39e07d889933a3cf"
+    },
+    {
+      "name": "ros_comm/rosparam",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm-release/tar.gz/release/noetic/rosparam/1.17.4-1",
+      "sha256": "ae21ae77c55409acb018048793bef50d3628efb73bcffe56779a4009096e8e40"
+    },
+    {
+      "name": "ros_comm/rospy",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm-release/tar.gz/release/noetic/rospy/1.17.4-1",
+      "sha256": "16a241e6722ed20fc7dbba09b84da0967a9d706f9f8438fbc1a9df52e16e73b6"
+    },
+    {
+      "name": "ros_comm/rosservice",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm-release/tar.gz/release/noetic/rosservice/1.17.4-1",
+      "sha256": "fa1ae90747ebc012d04385cf275b8d02c7a0feb917dc15a13e41246cef8346a2"
+    },
+    {
+      "name": "ros_comm/rostest",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm-release/tar.gz/release/noetic/rostest/1.17.4-1",
+      "sha256": "226939a698209e58c9badb001fb40886d332099c9888280ca2286ce7360f7088"
+    },
+    {
+      "name": "ros_comm/rostopic",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm-release/tar.gz/release/noetic/rostopic/1.17.4-1",
+      "sha256": "768d44e8f079df2ac0bbead48233b021a3c818457f349df762bc15d074ffa00b"
+    },
+    {
+      "name": "ros_comm/roswtf",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm-release/tar.gz/release/noetic/roswtf/1.17.4-1",
+      "sha256": "f21649ba81ca4df257f796d106a4c34c9859f11c35f96b6f5dd067a2110dd7ae"
+    },
+    {
+      "name": "ros_comm/topic_tools",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm-release/tar.gz/release/noetic/topic_tools/1.17.4-1",
+      "sha256": "c6bc4fc749babc098671c00365dbccacaf5cea1fd226d9d26acac45d0aa05d05"
+    },
+    {
+      "name": "ros_comm/xmlrpcpp",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm-release/tar.gz/release/noetic/xmlrpcpp/1.17.4-1",
+      "sha256": "87e9f43c8f184602ab097c120a7c9d1fcbb8cb6dfb82dd215037e6ba445e39fc"
+    },
+    {
+      "name": "ros_comm_msgs/rosgraph_msgs",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm_msgs-release/tar.gz/release/noetic/rosgraph_msgs/1.11.4-1",
+      "sha256": "38418eecbfb37cf3f9906d8ed328b250dd5efef8cba6de64617a85f9be5faab9"
+    },
+    {
+      "name": "ros_comm_msgs/std_srvs",
+      "url": "https://codeload.github.com/ros-gbp/ros_comm_msgs-release/tar.gz/release/noetic/std_srvs/1.11.4-1",
+      "sha256": "1a2c9d3e1eb7b74dcf47cf82b2f263f8fbd95f4d0861c292d181358da98f5ba4"
+    },
+    {
+      "name": "ros_environment",
+      "url": "https://codeload.github.com/ros-gbp/ros_environment-release/tar.gz/release/noetic/ros_environment/1.3.2-1",
+      "sha256": "e662f6de77ecf5636ad97a2f7a61e588a64df62396c44e8c5cd3c14adefdf59d"
+    },
+    {
+      "name": "rosbag_migration_rule",
+      "url": "https://codeload.github.com/ros-gbp/rosbag_migration_rule-release/tar.gz/release/noetic/rosbag_migration_rule/1.0.2-1",
+      "sha256": "c3b1cf23e3470dd151c3422f0f26e3f364cfcb5ab36b5d7a027fbea7f8ea5ffc"
+    },
+    {
+      "name": "rosconsole",
+      "url": "https://codeload.github.com/ros-gbp/rosconsole-release/tar.gz/release/noetic/rosconsole/1.14.4-1",
+      "sha256": "717f7668b34e1e7cdd017b7a8474623c6b54ed33739ed8763ec8acd041d7c437"
+    },
+    {
+      "name": "roscpp_core/cpp_common",
+      "url": "https://codeload.github.com/ros-gbp/roscpp_core-release/tar.gz/release/noetic/cpp_common/0.7.3-1",
+      "sha256": "94f8dc489e48f8848d861a063f5b3578f585de3c18cd45095976fbc9df44951d"
+    },
+    {
+      "name": "roscpp_core/roscpp_serialization",
+      "url": "https://codeload.github.com/ros-gbp/roscpp_core-release/tar.gz/release/noetic/roscpp_serialization/0.7.3-1",
+      "sha256": "349854ff6feedec540d14dda9c016964adb5b4d0398026a9bc05b1b765930c64"
+    },
+    {
+      "name": "roscpp_core/roscpp_traits",
+      "url": "https://codeload.github.com/ros-gbp/roscpp_core-release/tar.gz/release/noetic/roscpp_traits/0.7.3-1",
+      "sha256": "8c3418f8b4a57e921e55f39bd586db9ede2905b49b3983ec27b6ee623e7f2194"
+    },
+    {
+      "name": "roscpp_core/rostime",
+      "url": "https://codeload.github.com/ros-gbp/roscpp_core-release/tar.gz/release/noetic/rostime/0.7.3-1",
+      "sha256": "9147416c5ab3b2593a22ae339ad7fe66630ac730431018352f4962f5f58d6e6b"
+    },
+    {
+      "name": "roslisp",
+      "url": "https://codeload.github.com/ros-gbp/roslisp-release/tar.gz/release/noetic/roslisp/1.9.25-1",
+      "sha256": "b451a7a128bff305054ccdd48bab22b79ce442db1181e7920644ba666973256a"
+    },
+    {
+      "name": "rospack",
+      "url": "https://codeload.github.com/ros-gbp/rospack-release/tar.gz/release/noetic/rospack/2.6.4-1",
+      "sha256": "2ae080163c566f601b854c002f6e05cd3a6482bf395722ea12855f1999338deb"
+    },
+    {
+      "name": "std_msgs",
+      "url": "https://codeload.github.com/ros-gbp/std_msgs-release/tar.gz/release/noetic/std_msgs/0.5.14-1",
+      "sha256": "5b3e8cd3e4cad78c208160849b0781770e0b138a542e396bda1e92666f5c2905"
+    }
+  ]
+}

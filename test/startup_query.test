@@ -1,0 +1,45 @@
+<launch>
+  <param name="/odin2_mock/require_device_query" value="true"/>
+  <node pkg="odin2_ros_driver" type="odin2_mock_node" name="startup_query_driver" output="screen">
+    <rosparam param="devices">
+      - name: fixed_first
+        device_ip: 127.0.0.1
+        host_ip: 127.0.0.1
+        streams:
+          raw_point: {enabled: true}
+          imu: {enabled: false}
+          telemetry: {enabled: false}
+      - name: fixed_second
+        device_ip: 127.0.0.2
+        host_ip: 127.0.0.1
+        sn: MOCK2
+        streams:
+          raw_point: {enabled: true}
+          imu: {enabled: false}
+          telemetry: {enabled: false}
+    </rosparam>
+  </node>
+  <node pkg="odin2_ros_driver" type="odin2_mock_node" name="wrong_sn_driver" output="screen">
+    <rosparam param="devices">
+      - name: wrong_sn
+        device_ip: 127.0.0.1
+        host_ip: 127.0.0.1
+        sn: WRONG
+    </rosparam>
+  </node>
+  <node pkg="odin2_ros_driver" type="odin2_mock_node" name="wrong_ip_driver" output="screen">
+    <rosparam param="devices">
+      - name: wrong_ip
+        device_ip: 127.0.0.3
+        host_ip: 127.0.0.1
+    </rosparam>
+  </node>
+  <node pkg="odin2_ros_driver" type="odin2_mock_node" name="wrong_host_driver" output="screen">
+    <rosparam param="devices">
+      - name: wrong_host
+        device_ip: 127.0.0.1
+        host_ip: 127.0.0.2
+    </rosparam>
+  </node>
+  <test pkg="odin2_ros_driver" type="startup_query.py" test-name="startup_query" time-limit="25"/>
+</launch>

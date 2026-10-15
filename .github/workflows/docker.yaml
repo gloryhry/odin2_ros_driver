@@ -1,4 +1,4 @@
-name: ROS1 build and multi-architecture GHCR release
+name: ROS1 test and multi-architecture GHCR release
 on:
   pull_request:
   push:
@@ -36,7 +36,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and export architecture digest
+      - name: Test, build and export architecture digest
         id: build
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
@@ -56,6 +56,22 @@ jobs:
             io.odin2.sdk.version=3.3.0_20260822
           provenance: mode=max
           sbom: true
+      - name: Export tests
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          target: test-results
+          platforms: linux/${{ matrix.arch }}
+          build-args: |
+            BUILD_JOBS=2
+            SOURCE_REVISION=${{ github.sha }}
+          outputs: type=local,dest=reports
+          cache-from: type=gha,scope=odin2-${{ matrix.arch }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: test-results-${{ matrix.arch }}
+          path: reports
       - name: Save digest
         if: github.event_name != 'pull_request'
         env:

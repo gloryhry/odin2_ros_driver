@@ -1,0 +1,3 @@
+<launch>
+  <test pkg="odin2_ros_driver" type="control_tests" test-name="control_transactions" time-limit="120"/>
+</launch>

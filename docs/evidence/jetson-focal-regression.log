@@ -1,0 +1,255 @@
+Targeted local amd64 ROS/decoder regression in an existing focal image.
+PCL-only test target was excluded in the temporary container because that image lacks libpcl-dev; repository Dockerfile retains PCL tests. No Jetson hardware was attached.
+
+[WARN] [1792052528.748394320]: Camera calibration file /root/.ros/camera_info/decoder_diagnostics_camera0.yaml not found.
+[WARN] [1792052528.748459871]: decoder_diagnostics camera0: jetson/test [test]: test hardware unavailable
+[swscaler @ 0x7b671c0069c0] Warning: data is not aligned! This can lead to a speed loss
+[WARN] [1792052532.314585988]: Camera calibration file /root/.ros/camera_info/nv12_diagnostics_camera0.yaml not found.
+[WARN] [1792052535.376390358]: Camera calibration file /root/.ros/camera_info/runtime_camera1.yaml not found.
+[WARN] [1792052535.376428273]: runtime camera1: no compiled hardware decoder supports this format
+[WARN] [1792052535.376686033]: Camera calibration file /root/.ros/camera_info/runtime_camera0.yaml not found.
+[WARN] [1792052535.376721772]: runtime camera0: no compiled hardware decoder supports this format
+[WARN] [1792052536.408262808]: Camera calibration file /root/.ros/camera_info/runtime_camera0.yaml not found.
+[WARN] [1792052536.408302745]: runtime camera0: no compiled hardware decoder supports this format
+[WARN] [1792052536.938962887]: Camera calibration file /root/.ros/camera_info/runtime_camera0.yaml not found.
+[WARN] [1792052536.938984941]: runtime camera0: no compiled hardware decoder supports this format
+[WARN] [1792052537.796463634]: Camera calibration file /root/.ros/camera_info/runtime_camera0.yaml not found.
+[WARN] [1792052537.796502834]: runtime camera0: no compiled hardware decoder supports this format
+... logging to /root/.ros/log/rostest-950328c55924-4563.log
+[ROSUNIT] Outputting test results to /root/.ros/test_results/odin2_ros_driver/rostest-test_runtime.xml
+[Testcase: testruntime_regressions] ... ok
+
+[ROSTEST]-----------------------------------------------------------------------
+
+[odin2_ros_driver.rosunit-runtime_regressions/CounterAndTimestampRestartWithoutImuResumesAtFirstPacket][passed]
+[odin2_ros_driver.rosunit-runtime_regressions/RejectedDuplicateDoesNotAdvanceTimestampOrSequence][passed]
+[odin2_ros_driver.rosunit-runtime_regressions/SequenceWrapAndSmallReorderingDoNotResetEpoch][passed]
+[odin2_ros_driver.rosunit-runtime_regressions/CpuFallbackWarnsAndHardwareRecoveryClearsCurrentWarning][passed]
+[odin2_ros_driver.rosunit-runtime_regressions/EncodedOnlyAndUninitializedCameraDoNotWarnAboutCpuFallback][passed]
+[odin2_ros_driver.rosunit-runtime_regressions/RawNv12ConversionDoesNotWarnAboutCpuDecoding][passed]
+[odin2_ros_driver.rosunit-runtime_regressions/MjpegCompressedRateDoesNotThrottleEncodedOrDoubleCountPublishedPackets][passed]
+[odin2_ros_driver.rosunit-runtime_regressions/EpochResetFencesBothInFlightDecodersAndReplacesQueuedRawPacket][passed]
+[odin2_ros_driver.rosunit-runtime_regressions/ForwardSequenceGapFencesInFlightDecodeAndPublishesFreshIndependentFrame][passed]
+[odin2_ros_driver.rosunit-runtime_regressions/LowImageRatePreservesEveryReferencePacketAndDecodability/0][passed]
+[odin2_ros_driver.rosunit-runtime_regressions/LowImageRatePreservesEveryReferencePacketAndDecodability/1][passed]
+
+SUMMARY
+ * RESULT: SUCCESS
+ * TESTS: 11
+ * ERRORS: 0
+ * FAILURES: 0
+
+rostest log file is in /root/.ros/log/rostest-950328c55924-4563.log
+[==========] Running 48 tests from 10 test suites.
+[----------] Global test environment set-up.
+[----------] 5 tests from Conversion
+[ RUN      ] Conversion.RawUnitsFieldsAndInvalidPoints
+[       OK ] Conversion.RawUnitsFieldsAndInvalidPoints (0 ms)
+[ RUN      ] Conversion.RawOfficialLayoutAndRollingScanTime
+[       OK ] Conversion.RawOfficialLayoutAndRollingScanTime (1 ms)
+[ RUN      ] Conversion.SlamNegativeWorldCoordinatesAndColor
+[       OK ] Conversion.SlamNegativeWorldCoordinatesAndColor (0 ms)
+[ RUN      ] Conversion.ImuAndOdomPreserveSdkMeaning
+[       OK ] Conversion.ImuAndOdomPreserveSdkMeaning (0 ms)
+[ RUN      ] Conversion.EmptyAndNonfinite
+[       OK ] Conversion.EmptyAndNonfinite (0 ms)
+[----------] 5 tests from Conversion (1 ms total)
+
+[----------] 3 tests from Time
+[ RUN      ] Time.CommonMappingAndRollback
+[       OK ] Time.CommonMappingAndRollback (0 ms)
+[ RUN      ] Time.ZeroHostAndOffset
+[       OK ] Time.ZeroHostAndOffset (0 ms)
+[ RUN      ] Time.ExtremeValuesAndRosJump
+[       OK ] Time.ExtremeValuesAndRosJump (0 ms)
+[----------] 3 tests from Time (0 ms total)
+
+[----------] 1 test from Queue
+[ RUN      ] Queue.BothBoundsAndOversizedPacket
+[       OK ] Queue.BothBoundsAndOversizedPacket (0 ms)
+[----------] 1 test from Queue (0 ms total)
+
+[----------] 1 test from Config
+[ RUN      ] Config.CapabilityMaskAndUnsupportedAcquisitionParameters
+[       OK ] Config.CapabilityMaskAndUnsupportedAcquisitionParameters (0 ms)
+[----------] 1 test from Config (0 ms total)
+
+[----------] 3 tests from Decoder
+[ RUN      ] Decoder.Nv12AndMalformedPayload
+[       OK ] Decoder.Nv12AndMalformedPayload (0 ms)
+[ RUN      ] Decoder.AllEncodedFixtures
+[AVHWDeviceContext @ 0x64bdacf3ba80] Cannot load libcuda.so.1
+[AVHWDeviceContext @ 0x64bdacf3ba80] Could not dynamically load CUDA
+[AVHWDeviceContext @ 0x64bdacf3d980] Cannot load libcuda.so.1
+[AVHWDeviceContext @ 0x64bdacf3d980] Could not dynamically load CUDA
+[AVHWDeviceContext @ 0x64bdacf3e080] No VA display found for device /dev/dri/renderD128.
+[swscaler @ 0x64bdacf3fe40] deprecated pixel format used, make sure you did set range correctly
+[AVHWDeviceContext @ 0x64bdacf3ee40] Cannot load libcuda.so.1
+[AVHWDeviceContext @ 0x64bdacf3ee40] Could not dynamically load CUDA
+[AVHWDeviceContext @ 0x64bdacf3e080] Cannot load libcuda.so.1
+[AVHWDeviceContext @ 0x64bdacf3e080] Could not dynamically load CUDA
+[AVHWDeviceContext @ 0x64bdacf3e080] No VA display found for device /dev/dri/renderD128.
+[h264_v4l2m2m @ 0x64bdacf32940] Could not find a valid device
+[h264_v4l2m2m @ 0x64bdacf32940] can't configure decoder
+[AVHWDeviceContext @ 0x64bdacf3e080] Cannot open the X11 display .
+[       OK ] Decoder.AllEncodedFixtures (6 ms)
+[ RUN      ] Decoder.SeparateParametersAndRecoveryAndStereoIsolation
+[AVHWDeviceContext @ 0x64bdacf3dac0] Cannot load libcuda.so.1
+[AVHWDeviceContext @ 0x64bdacf3dac0] Could not dynamically load CUDA
+[AVHWDeviceContext @ 0x64bdacfb96c0] Cannot load libcuda.so.1
+[AVHWDeviceContext @ 0x64bdacfb96c0] Could not dynamically load CUDA
+[AVHWDeviceContext @ 0x64bdacf3ba80] No VA display found for device /dev/dri/renderD128.
+[hevc_v4l2m2m @ 0x64bdacf2d6c0] Could not find a valid device
+[hevc_v4l2m2m @ 0x64bdacf2d6c0] can't configure decoder
+[AVHWDeviceContext @ 0x64bdacf32ac0] Cannot open the X11 display .
+[AVHWDeviceContext @ 0x64bdacf32ac0] Cannot load libcuda.so.1
+[AVHWDeviceContext @ 0x64bdacf32ac0] Could not dynamically load CUDA
+[AVHWDeviceContext @ 0x64bdacfb96c0] Cannot load libcuda.so.1
+[AVHWDeviceContext @ 0x64bdacfb96c0] Could not dynamically load CUDA
+[AVHWDeviceContext @ 0x64bdacf3fa40] No VA display found for device /dev/dri/renderD128.
+[h264_v4l2m2m @ 0x64bdacf2f580] Could not find a valid device
+[h264_v4l2m2m @ 0x64bdacf2f580] can't configure decoder
+[AVHWDeviceContext @ 0x64bdacf3fa40] Cannot open the X11 display .
+[AVHWDeviceContext @ 0x64bdacfaa680] Cannot load libcuda.so.1
+[AVHWDeviceContext @ 0x64bdacfaa680] Could not dynamically load CUDA
+[AVHWDeviceContext @ 0x64bdacfaa680] Cannot load libcuda.so.1
+[AVHWDeviceContext @ 0x64bdacfaa680] Could not dynamically load CUDA
+[AVHWDeviceContext @ 0x64bdacfaa680] No VA display found for device /dev/dri/renderD128.
+[h264_v4l2m2m @ 0x64bdacfb14c0] Could not find a valid device
+[h264_v4l2m2m @ 0x64bdacfb14c0] can't configure decoder
+[AVHWDeviceContext @ 0x64bdacfaf980] Cannot open the X11 display .
+[AVHWDeviceContext @ 0x64bdacf3f2c0] Cannot load libcuda.so.1
+[AVHWDeviceContext @ 0x64bdacf3f2c0] Could not dynamically load CUDA
+[AVHWDeviceContext @ 0x64bdacf2f880] Cannot load libcuda.so.1
+[AVHWDeviceContext @ 0x64bdacf2f880] Could not dynamically load CUDA
+[AVHWDeviceContext @ 0x64bdacf3f2c0] No VA display found for device /dev/dri/renderD128.
+[mjpeg @ 0x64bdacf2e100] No JPEG data found in image
+[AVHWDeviceContext @ 0x64bdacf3ee40] Cannot load libcuda.so.1
+[AVHWDeviceContext @ 0x64bdacf3ee40] Could not dynamically load CUDA
+[AVHWDeviceContext @ 0x64bdad07b780] Cannot load libcuda.so.1
+[AVHWDeviceContext @ 0x64bdad07b780] Could not dynamically load CUDA
+[AVHWDeviceContext @ 0x64bdad07bb00] No VA display found for device /dev/dri/renderD128.
+[hevc_v4l2m2m @ 0x64bdacf2eb40] Could not find a valid device
+[hevc_v4l2m2m @ 0x64bdacf2eb40] can't configure decoder
+[AVHWDeviceContext @ 0x64bdacf3f5c0] Cannot open the X11 display .
+[AVHWDeviceContext @ 0x64bdacfb8a80] Cannot load libcuda.so.1
+[AVHWDeviceContext @ 0x64bdacfb8a80] Could not dynamically load CUDA
+[AVHWDeviceContext @ 0x64bdacfaeb80] Cannot load libcuda.so.1
+[AVHWDeviceContext @ 0x64bdacfaeb80] Could not dynamically load CUDA
+[AVHWDeviceContext @ 0x64bdad07bb00] No VA display found for device /dev/dri/renderD128.
+[hevc_v4l2m2m @ 0x64bdacf60640] Could not find a valid device
+[hevc_v4l2m2m @ 0x64bdacf60640] can't configure decoder
+[AVHWDeviceContext @ 0x64bdad07bb00] Cannot open the X11 display .
+[AVHWDeviceContext @ 0x64bdacfae840] Cannot load libcuda.so.1
+[AVHWDeviceContext @ 0x64bdacfae840] Could not dynamically load CUDA
+[AVHWDeviceContext @ 0x64bdacf7db40] Cannot load libcuda.so.1
+[AVHWDeviceContext @ 0x64bdacf7db40] Could not dynamically load CUDA
+[AVHWDeviceContext @ 0x64bdacfaeb80] No VA display found for device /dev/dri/renderD128.
+[mjpeg @ 0x64bdacfb7b80] No JPEG data found in image
+[       OK ] Decoder.SeparateParametersAndRecoveryAndStereoIsolation (1 ms)
+[----------] 3 tests from Decoder (7 ms total)
+
+[----------] 3 tests from SdkProtocol
+[ RUN      ] SdkProtocol.ReconstructedImuTimestamps
+[       OK ] SdkProtocol.ReconstructedImuTimestamps (1 ms)
+[ RUN      ] SdkProtocol.OriginalPointConversionAndOffset
+[       OK ] SdkProtocol.OriginalPointConversionAndOffset (1 ms)
+[ RUN      ] SdkProtocol.OriginalImageAssemblyWithTcpFragmentation
+[       OK ] SdkProtocol.OriginalImageAssemblyWithTcpFragmentation (0 ms)
+[----------] 3 tests from SdkProtocol (2 ms total)
+
+[----------] 2 tests from LiveSdk
+[ RUN      ] LiveSdk.UnreachableDeviceFailsWithoutCrashing
+[2026:10:15:08:22:18][WARN][logger.cpp:log_config:28]: init loglevel 1.
+[2026:10:15:08:22:18][ERROR][TcpTransport.cpp:OpenAsClient:109]: TcpTransport::OpenAsClient: connect() failed to 127.0.0.2:60002
+[2026:10:15:08:22:18][WARN][OdinCommand.cpp:Connect:101]: OdinCommand: Heartbeat transport Open failed (port 60002)
+[2026:10:15:08:22:18][ERROR][TcpTransport.cpp:OpenAsClient:109]: TcpTransport::OpenAsClient: connect() failed to 127.0.0.2:60001
+[2026:10:15:08:22:18][ERROR][OdinCommand.cpp:Connect:143]: OdinCommand: Command transport Open failed (port 60001)
+[2026:10:15:08:22:18][ERROR][odin2.cpp:Connect:89]: Odin2Device::Connect: Command connect failed
+[2026:10:15:08:22:18][ERROR][OdinSdkImpl.cpp:ConnectDevice:232]: Device connection failed
+[       OK ] LiveSdk.UnreachableDeviceFailsWithoutCrashing (0 ms)
+[ RUN      ] LiveSdk.StreamFailuresIncludeOperationChannelAndResult
+[       OK ] LiveSdk.StreamFailuresIncludeOperationChannelAndResult (0 ms)
+[----------] 2 tests from LiveSdk (0 ms total)
+
+[----------] 15 tests from HardwareDecoder
+[ RUN      ] HardwareDecoder.FirstHardwareSuccessNeverOpensCpu
+[       OK ] HardwareDecoder.FirstHardwareSuccessNeverOpensCpu (0 ms)
+[ RUN      ] HardwareDecoder.OpenAndRuntimeFailureTryOtherHardwareBeforeCpu
+[swscaler @ 0x64bdacf62080] Warning: data is not aligned! This can lead to a speed loss
+[       OK ] HardwareDecoder.OpenAndRuntimeFailureTryOtherHardwareBeforeCpu (0 ms)
+[ RUN      ] HardwareDecoder.CooldownDoesNotProbeEveryFrameAndRecoversAtThirtySeconds
+[       OK ] HardwareDecoder.CooldownDoesNotProbeEveryFrameAndRecoversAtThirtySeconds (0 ms)
+[ RUN      ] HardwareDecoder.CorruptInputDoesNotBlacklistHardware
+[       OK ] HardwareDecoder.CorruptInputDoesNotBlacklistHardware (0 ms)
+[ RUN      ] HardwareDecoder.AsyncFinalFrameKeepsOriginalContextWithoutAnotherPacket
+[       OK ] HardwareDecoder.AsyncFinalFrameKeepsOriginalContextWithoutAnotherPacket (0 ms)
+[ RUN      ] HardwareDecoder.ResetDiscardsOldAsyncFramesAndReprobesAfterReconnect
+[       OK ] HardwareDecoder.ResetDiscardsOldAsyncFramesAndReprobesAfterReconnect (0 ms)
+[ RUN      ] HardwareDecoder.AsyncHardwareFailureRetriesFinalIndependentFrameWithoutNewInput
+[       OK ] HardwareDecoder.AsyncHardwareFailureRetriesFinalIndependentFrameWithoutNewInput (0 ms)
+[ RUN      ] HardwareDecoder.VideoFailureWaitsForKeyframeAndPreservesParameters
+[       OK ] HardwareDecoder.VideoFailureWaitsForKeyframeAndPreservesParameters (0 ms)
+[ RUN      ] HardwareDecoder.ReconnectAndFormatChangeClearHardwareCooldown
+[       OK ] HardwareDecoder.ReconnectAndFormatChangeClearHardwareCooldown (0 ms)
+[ RUN      ] HardwareDecoder.Nv12NeverDiscoversCodecBackends
+[       OK ] HardwareDecoder.Nv12NeverDiscoversCodecBackends (0 ms)
+[ RUN      ] HardwareDecoder.ResolutionAndParameterChangesImmediatelyReprobeHardware
+[       OK ] HardwareDecoder.ResolutionAndParameterChangesImmediatelyReprobeHardware (0 ms)
+[ RUN      ] HardwareDecoder.StalledAsyncHardwareFallsBackAndKeepsQueuesBounded
+[       OK ] HardwareDecoder.StalledAsyncHardwareFallsBackAndKeepsQueuesBounded (0 ms)
+[ RUN      ] HardwareDecoder.NewPendingFrameGetsFullTimeoutAfterLongIdle
+[       OK ] HardwareDecoder.NewPendingFrameGetsFullTimeoutAfterLongIdle (0 ms)
+[ RUN      ] HardwareDecoder.ActualOutputRefreshesTimeoutWhileOtherFramesRemainPending
+[       OK ] HardwareDecoder.ActualOutputRefreshesTimeoutWhileOtherFramesRemainPending (0 ms)
+[ RUN      ] HardwareDecoder.RealHardwareWhenExplicitlyRequested
+[  SKIPPED ] HardwareDecoder.RealHardwareWhenExplicitlyRequested (1 ms)
+[----------] 15 tests from HardwareDecoder (1 ms total)
+
+[----------] 7 tests from MjpegPendingCounts/IndependentAsyncTail
+[ RUN      ] MjpegPendingCounts/IndependentAsyncTail.RecoversAtFiveSecondsWithoutAnotherInput/0
+[       OK ] MjpegPendingCounts/IndependentAsyncTail.RecoversAtFiveSecondsWithoutAnotherInput/0 (0 ms)
+[ RUN      ] MjpegPendingCounts/IndependentAsyncTail.RecoversAtFiveSecondsWithoutAnotherInput/1
+[       OK ] MjpegPendingCounts/IndependentAsyncTail.RecoversAtFiveSecondsWithoutAnotherInput/1 (0 ms)
+[ RUN      ] MjpegPendingCounts/IndependentAsyncTail.RecoversAtFiveSecondsWithoutAnotherInput/2
+[       OK ] MjpegPendingCounts/IndependentAsyncTail.RecoversAtFiveSecondsWithoutAnotherInput/2 (0 ms)
+[ RUN      ] MjpegPendingCounts/IndependentAsyncTail.RecoversAtFiveSecondsWithoutAnotherInput/3
+[       OK ] MjpegPendingCounts/IndependentAsyncTail.RecoversAtFiveSecondsWithoutAnotherInput/3 (0 ms)
+[ RUN      ] MjpegPendingCounts/IndependentAsyncTail.RecoversAtFiveSecondsWithoutAnotherInput/4
+[       OK ] MjpegPendingCounts/IndependentAsyncTail.RecoversAtFiveSecondsWithoutAnotherInput/4 (0 ms)
+[ RUN      ] MjpegPendingCounts/IndependentAsyncTail.RecoversAtFiveSecondsWithoutAnotherInput/5
+[       OK ] MjpegPendingCounts/IndependentAsyncTail.RecoversAtFiveSecondsWithoutAnotherInput/5 (0 ms)
+[ RUN      ] MjpegPendingCounts/IndependentAsyncTail.RecoversAtFiveSecondsWithoutAnotherInput/6
+[       OK ] MjpegPendingCounts/IndependentAsyncTail.RecoversAtFiveSecondsWithoutAnotherInput/6 (0 ms)
+[----------] 7 tests from MjpegPendingCounts/IndependentAsyncTail (0 ms total)
+
+[----------] 8 tests from VideoFormats/IndependentVideoTail
+[ RUN      ] VideoFormats/IndependentVideoTail.SingleKeyframeRecoversWithoutAnotherInput/0
+[       OK ] VideoFormats/IndependentVideoTail.SingleKeyframeRecoversWithoutAnotherInput/0 (0 ms)
+[ RUN      ] VideoFormats/IndependentVideoTail.SingleKeyframeRecoversWithoutAnotherInput/1
+[       OK ] VideoFormats/IndependentVideoTail.SingleKeyframeRecoversWithoutAnotherInput/1 (0 ms)
+[ RUN      ] VideoFormats/IndependentVideoTail.DependentReorderTailDoesNotTriggerPrematureRecovery/0
+[       OK ] VideoFormats/IndependentVideoTail.DependentReorderTailDoesNotTriggerPrematureRecovery/0 (0 ms)
+[ RUN      ] VideoFormats/IndependentVideoTail.DependentReorderTailDoesNotTriggerPrematureRecovery/1
+[       OK ] VideoFormats/IndependentVideoTail.DependentReorderTailDoesNotTriggerPrematureRecovery/1 (0 ms)
+[ RUN      ] VideoFormats/IndependentVideoTail.KeyframeWithDependentTailWaitsForNormalReordering/0
+[       OK ] VideoFormats/IndependentVideoTail.KeyframeWithDependentTailWaitsForNormalReordering/0 (0 ms)
+[ RUN      ] VideoFormats/IndependentVideoTail.KeyframeWithDependentTailWaitsForNormalReordering/1
+[       OK ] VideoFormats/IndependentVideoTail.KeyframeWithDependentTailWaitsForNormalReordering/1 (0 ms)
+[ RUN      ] VideoFormats/IndependentVideoTail.DependentFramesCannotGrowBeyondSixtyFourPending/0
+[       OK ] VideoFormats/IndependentVideoTail.DependentFramesCannotGrowBeyondSixtyFourPending/0 (0 ms)
+[ RUN      ] VideoFormats/IndependentVideoTail.DependentFramesCannotGrowBeyondSixtyFourPending/1
+[       OK ] VideoFormats/IndependentVideoTail.DependentFramesCannotGrowBeyondSixtyFourPending/1 (0 ms)
+[----------] 8 tests from VideoFormats/IndependentVideoTail (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 48 tests from 10 test suites ran. (11 ms total)
+[  PASSED  ] 47 tests.
+[  SKIPPED ] 1 test, listed below:
+[  SKIPPED ] HardwareDecoder.RealHardwareWhenExplicitlyRequested
+
+Relocated installation smoke:
+####
+[2026:10:15:08:26:00][WARN][logger.cpp:log_config:28]: init loglevel 1.
+[WARN] [1792052760.370981203]: smoke: configured device not discovered (device_ip=127.0.0.2, sn=, host_ip=127.0.0.1); check UDP DeviceQuery on port 60001; retry in 1s
+Installed live SDK node, Python messages and status publication: PASS

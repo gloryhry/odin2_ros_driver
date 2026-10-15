@@ -1202,6 +1202,16 @@ void DeviceDriver::Impl::diagnose(diagnostic_updater::DiagnosticStatusWrapper& d
       d.add(name + "/decoder_device", r.decoder_info.device);
       d.add(name + "/hardware_active", r.decoder_info.hardware_active);
       d.add(name + "/cpu_fallback_reason", r.decoder_info.fallback_reason);
+      const auto& settings = cfg.streams.at(ch);
+      const auto format = settings.mode.format;
+      const bool compressed = format == sdk::OdinDataFormat::kImageMjpeg ||
+                              format == sdk::OdinDataFormat::kImageH264 ||
+                              format == sdk::OdinDataFormat::kImageH265;
+      if (ready && settings.enabled && settings.publish_decoded && compressed &&
+          r.decoder_active && r.decoder_info.backend.rfind("cpu/", 0) == 0 &&
+          !r.decoder_info.hardware_active)
+        d.mergeSummary(diagnostic_msgs::DiagnosticStatus::WARN,
+                       name + " decoding on CPU: " + r.decoder_info.fallback_reason);
       std::string failures;
       for (const auto& failure : r.decoder_info.failures) {
         if (!failures.empty())

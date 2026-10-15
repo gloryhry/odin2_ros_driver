@@ -1,16 +1,40 @@
 # syntax=docker/dockerfile:1
-# Override with an L4T image matching the host. r35 = JetPack 5, r36 = JetPack 6.
-ARG L4T_BASE_IMAGE=nvcr.io/nvidia/l4t-jetpack:r35.4.1
-FROM ${L4T_BASE_IMAGE} AS ros-base
+# The catalog selects a digest-pinned ARM64 Ubuntu base and exact NVIDIA plugins.
+ARG L4T_BASE_IMAGE=docker.io/library/ubuntu:20.04@sha256:722ea796ac2d57eeb3627c58a582fc1acc58be51faf815e1bce1682ae5c092f7
+FROM ${L4T_BASE_IMAGE} AS dependencies
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ARG BUILD_JOBS=2
 ENV DEBIAN_FRONTEND=noninteractive ROS_DISTRO=noetic
+# Minimal Ubuntu has no CA store; bootstrap a dated, checksum-verified Mozilla
+# bundle before the signed Ubuntu snapshot redirects HTTP requests to HTTPS.
+ADD --chmod=644 --checksum=sha256:a41b5d356aea97a529fe27e0f7316d2f9d946d75927476cf9cf1b90637d00505 https://curl.se/ca/cacert-2026-09-25.pem /etc/ssl/certs/ca-certificates.crt
+COPY docker/jetson-support.py docker/jetson-versions.json docker/fetch-ros.py docker/noetic-sources.lock.json /opt/odin2/jetson/
+# A signed, dated Ubuntu snapshot fixes package resolution for both ARM64 series.
+RUN chmod 755 /etc/ssl /etc/ssl/certs && source /etc/os-release && \
+    snapshot=$(sed -nE 's/.*"ubuntu_snapshot": "([^"]+)".*/\1/p' /opt/odin2/jetson/jetson-versions.json) && \
+    test -n "$snapshot" && rm -f /etc/apt/sources.list.d/ubuntu.sources && \
+    printf 'deb [check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/%s/ %s main restricted universe multiverse\n' "$snapshot" "$VERSION_CODENAME" > /etc/apt/sources.list && \
+    printf 'deb [check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/%s/ %s-updates main restricted universe multiverse\n' "$snapshot" "$VERSION_CODENAME" >> /etc/apt/sources.list && \
+    printf 'deb [check-valid-until=no] https://snapshot.ubuntu.com/ubuntu/%s/ %s-security main restricted universe multiverse\n' "$snapshot" "$VERSION_CODENAME" >> /etc/apt/sources.list && \
+    echo 'APT::Update::Error-Mode "any";' > /etc/apt/apt.conf.d/99odin2-strict-update
 RUN apt-get -o Acquire::Retries=5 update && apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
     build-essential cmake pkg-config git curl ca-certificates gnupg libeigen3-dev libssl-dev \
-    libavcodec-dev libavutil-dev libswscale-dev \
+    libavcodec-dev libavutil-dev libswscale-dev ffmpeg \
     libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
     gstreamer1.0-plugins-base gstreamer1.0-plugins-bad gstreamer1.0-tools \
+    python3-yaml \
     && rm -rf /var/lib/apt/lists/*
+# This small target validates the exact ARM64 plugin packaging independently of
+# the ROS build. Runtime invokes the same installer after its ROS dependencies.
+FROM dependencies AS jetson-plugins
+ARG L4T_BASE_IMAGE
+ARG L4T_VERSION=35.4.1
+ARG SOURCE_REVISION=unknown
+RUN python3 /opt/odin2/jetson/jetson-support.py install --l4t "$L4T_VERSION" \
+      --base-image "$L4T_BASE_IMAGE" --revision "$SOURCE_REVISION" && \
+    rm -rf /var/lib/apt/lists/*
+FROM dependencies AS ros-base
+ARG BUILD_JOBS=2
 # Noetic binaries exist for focal. On Jammy build its ROS1 dependencies from source.
 RUN source /etc/os-release && \
     if [ "$VERSION_CODENAME" = focal ]; then \
@@ -21,19 +45,15 @@ RUN source /etc/os-release && \
       apt-get -o Acquire::Retries=5 update && apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
         ros-noetic-ros-base ros-noetic-common-msgs ros-noetic-tf2-ros \
         ros-noetic-diagnostic-updater ros-noetic-dynamic-reconfigure \
-        ros-noetic-camera-info-manager && \
+        ros-noetic-camera-info-manager ros-noetic-rostest && \
       rm -rf /var/lib/apt/lists/*; \
     elif [ "$VERSION_CODENAME" = jammy ]; then \
       apt-get -o Acquire::Retries=5 update && apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
-        python3-rosdep2 python3-rosinstall-generator python3-wstool && \
+        python3-rosdep2 && \
       rm -rf /var/lib/apt/lists/* && \
       if [ ! -f /etc/ros/rosdep/sources.list.d/20-default.list ]; then rosdep init; fi && \
       rosdep update --include-eol-distros && \
-      mkdir -p /ros-source && cd /ros-source && \
-      rosinstall_generator ros_comm common_msgs tf2_ros tf2_msgs diagnostic_updater \
-        dynamic_reconfigure camera_info_manager --rosdistro noetic --deps --tar \
-        > noetic.rosinstall && \
-      wstool init src noetic.rosinstall -j${BUILD_JOBS}; \
+      python3 /opt/odin2/jetson/fetch-ros.py /opt/odin2/jetson/noetic-sources.lock.json /ros-source/src; \
     else echo 'Jetson image must use Ubuntu 20.04 or 22.04' >&2; exit 1; fi
 RUN if [ -d /ros-source ]; then cd /ros-source && apt-get -o Acquire::Retries=5 update && \
     apt-get -o Acquire::Retries=5 install -y --no-install-recommends python3-catkin-pkg python3-rospkg python3-rosdistro && \
@@ -49,15 +69,36 @@ RUN if [ -d /ros-source ]; then cd /ros-source && \
     src/catkin/bin/catkin_make_isolated --install --install-space /opt/ros/noetic \
       -j${BUILD_JOBS} -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=/usr/bin/python3 \
       -DROSCONSOLE_BACKEND=glog && \
-    cp noetic.rosinstall /opt/ros/noetic/source-manifest.rosinstall && rm -rf /ros-source; fi
+    cp /opt/odin2/jetson/noetic-sources.lock.json /opt/ros/noetic/source-manifest.lock.json && rm -rf /ros-source; fi
 FROM ros-base AS build
 ARG BUILD_JOBS=2
+RUN apt-get -o Acquire::Retries=5 update && \
+    apt-get -o Acquire::Retries=5 install -y --no-install-recommends libpcl-dev && \
+    rm -rf /var/lib/apt/lists/*
 WORKDIR /ws
 COPY . /ws/src/odin2_ros_driver
 RUN source /opt/ros/noetic/setup.bash && \
     catkin_make -j${BUILD_JOBS} -DCMAKE_BUILD_TYPE=Release -DODIN_DRIVER_GSTREAMER=ON \
-      -DODIN_DRIVER_NATIVE=OFF -DCATKIN_ENABLE_TESTING=OFF
-FROM build AS install
+      -DODIN_DRIVER_NATIVE=OFF -DCATKIN_ENABLE_TESTING=ON && \
+    catkin_make -j${BUILD_JOBS} tests
+RUN mkdir -p /fixtures && \
+    ffmpeg -loglevel error -f lavfi -i color=c=red:s=16x16:r=10 -frames:v 1 -threads 1 /fixtures/mjpeg.jpg && \
+    ffmpeg -loglevel error -f lavfi -i color=c=red:s=16x16:r=10 -frames:v 1 -c:v libx264 -threads 1 -preset ultrafast -tune zerolatency -f h264 /fixtures/h264.bin && \
+    ffmpeg -loglevel error -f lavfi -i color=c=red:s=16x16:r=10 -frames:v 1 -c:v libx265 -threads 1 -x265-params pools=none:frame-threads=1:bframes=0:rc-lookahead=0 -f hevc /fixtures/h265.bin && \
+    ffmpeg -loglevel error -f lavfi -i color=c=red:s=256x256:r=10 -frames:v 1 -pix_fmt yuvj420p -threads 1 /fixtures/hw-mjpeg.jpg && \
+    ffmpeg -loglevel error -f lavfi -i color=c=red:s=256x256:r=10 -frames:v 1 -c:v libx264 -threads 1 -preset ultrafast -tune zerolatency -f h264 /fixtures/hw-h264.bin && \
+    ffmpeg -loglevel error -f lavfi -i color=c=red:s=256x256:r=10 -frames:v 1 -c:v libx265 -threads 1 -x265-params pools=none:frame-threads=1:bframes=0:rc-lookahead=0 -f hevc /fixtures/hw-h265.bin && \
+    ffmpeg -loglevel error -f lavfi -i testsrc2=s=16x16:r=25 -frames:v 8 -c:v libx264 -threads 1 -bf 0 -g 8 -preset ultrafast -tune zerolatency -x264-params aud=1:repeat-headers=1 -f h264 /fixtures/sequence.h264 && \
+    ffmpeg -loglevel error -f lavfi -i testsrc2=s=16x16:r=25 -frames:v 8 -c:v libx265 -threads 1 -tune zerolatency -x265-params pools=none:frame-threads=1:bframes=0:rc-lookahead=0:aud=1:repeat-headers=1:keyint=8 -f hevc /fixtures/sequence.h265
+FROM build AS test
+ENV ODIN_TEST_FIXTURES=/fixtures
+RUN source /opt/ros/noetic/setup.bash && catkin_make run_tests && \
+    catkin_test_results --all /ws/build/test_results && \
+    /ws/devel/lib/odin2_ros_driver/driver_tests && \
+    python3 /ws/src/odin2_ros_driver/test/jetson_support_test.py
+FROM scratch AS test-results
+COPY --from=test /ws/build/test_results /test_results
+FROM test AS install
 RUN source /opt/ros/noetic/setup.bash && catkin_make install && \
     mkdir -p /ws/install/share/odin2_ros_driver/vendor && \
     tar -czf /ws/install/share/odin2_ros_driver/vendor/sdk-source.tar.gz \
@@ -68,23 +109,29 @@ RUN source /opt/ros/noetic/setup.bash && catkin_make install && \
     cp /usr/share/common-licenses/GPL-2 /ws/install/share/odin2_ros_driver/vendor/ && \
     cp /ws/src/odin2_ros_driver/THIRD_PARTY_NOTICES.md /ws/install/share/odin2_ros_driver/vendor/ && \
     cp /ws/src/odin2_ros_driver/LICENSE /ws/install/share/odin2_ros_driver/
-# Keep the matched L4T multimedia libraries/plugins; never copy another JetPack's libraries.
+# BSP libraries/devices are injected by the host NVIDIA runtime at container creation.
 FROM ros-base AS runtime
 ARG L4T_BASE_IMAGE
+ARG L4T_VERSION=35.4.1
+ARG SOURCE_REVISION=unknown
+# CSV libraries arrive after the build-time ldconfig. Keep both BSP layouts
+# searchable even on older runtime versions that do not refresh the cache.
+ENV LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/tegra:/usr/lib/aarch64-linux-gnu/tegra-egl:/usr/lib/aarch64-linux-gnu/nvidia
+ENV NVIDIA_REQUIRE_JETPACK=csv-mounts=all NVIDIA_VISIBLE_DEVICES=all NVIDIA_DRIVER_CAPABILITIES=all
+LABEL org.opencontainers.image.revision=${SOURCE_REVISION} \
+      io.odin2.target.l4t=${L4T_VERSION} \
+      io.odin2.base.image=${L4T_BASE_IMAGE}
 COPY --from=install /ws/install /opt/odin2
 COPY docker/entrypoint.sh /odin2-entrypoint.sh
 COPY docker/jetson-entrypoint.sh /jetson-entrypoint.sh
-RUN chmod +x /odin2-entrypoint.sh /jetson-entrypoint.sh && mkdir -p /output && \
-    if l4t_version=$(dpkg-query -W -f='${Version}' nvidia-l4t-core 2>/dev/null); then \
-      printf '%s\n' "${l4t_version%%-*}"; \
-    elif [[ -r /etc/nv_tegra_release ]]; then \
-      sed -nE 's/^# R([0-9]+).*REVISION: ([0-9.]+),.*/\1.\2/p' /etc/nv_tegra_release; \
-    elif [[ "$L4T_BASE_IMAGE" =~ ^nvcr.io/nvidia/l4t-jetpack:r([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then \
-      printf '%s\n' "${BASH_REMATCH[1]}"; \
-    else echo 'Cannot determine L4T version from the base image.' >&2; exit 1; fi \
-      > /opt/odin2/l4t-version && \
-    [[ "$(cat /opt/odin2/l4t-version)" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && \
+COPY test/runtime_smoke.py /tmp/runtime_smoke.py
+RUN python3 /opt/odin2/jetson/jetson-support.py install --l4t "$L4T_VERSION" \
+      --base-image "$L4T_BASE_IMAGE" --revision "$SOURCE_REVISION" && \
+    dpkg-query -W -f='${Package}\t${Version}\n' | sort > /opt/odin2/ubuntu-package-manifest.txt && \
+    rm -rf /var/lib/apt/lists/* /root/.cache/gstreamer-1.0 && \
+    chmod +x /odin2-entrypoint.sh /jetson-entrypoint.sh && mkdir -p /output && \
     source /opt/ros/noetic/setup.bash && source /opt/odin2/setup.bash && \
-    ! ldd /opt/odin2/lib/odin2_ros_driver/odin2_node | grep -q 'not found'
+    ! ldd /opt/odin2/lib/odin2_ros_driver/odin2_node | grep -q 'not found' && \
+    python3 /tmp/runtime_smoke.py && rm /tmp/runtime_smoke.py
 ENTRYPOINT ["/jetson-entrypoint.sh"]
 CMD ["roslaunch", "odin2_ros_driver", "driver.launch"]

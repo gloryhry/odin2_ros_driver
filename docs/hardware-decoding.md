@@ -27,46 +27,28 @@ docker compose -f docker/compose.yaml -f docker/compose.vaapi.yaml up -d
 ODIN2_VIDEO_DEVICE=/dev/video0 docker compose -f docker/compose.yaml -f docker/compose.v4l2.yaml up -d
 ```
 
-Jetson 专用镜像使用与主机完全匹配的 NVIDIA L4T 基础镜像和插件。通用 Ubuntu20 镜像可在 Jetson 上回退 CPU，但不能承诺专用硬解。先读取主机 /etc/nv_tegra_release，再选择匹配的 L4T 标签；`latest` 始终指向对应 JetPack 最近成功发布的构建。入口核对主机与镜像 L4T 版本，不匹配时明确退出。
+Jetson 专用镜像按明确的 18 个 JetPack 5／6 正式 L4T 版本构建。它们使用 digest 固定的 Ubuntu Focal／Jammy 基础层，以及目标 L4T 的校验锁定 NVIDIA GStreamer 插件；BSP 库和设备由宿主 NVIDIA Runtime CSV 注入。入口交叉检查宿主版本文件、`nvidia-l4t-core` 与镜像目标，不从 Ubuntu 基础标签推断 L4T。通用 ARM64 镜像可以回退 CPU。
 
-```bash
-# JetPack 5 示例（L4T 35.4.1）；默认基础镜像也是此版本。
-docker build -f docker/Dockerfile.jetson --build-arg BUILD_JOBS=2 \
-  --build-arg L4T_BASE_IMAGE=nvcr.io/nvidia/l4t-jetpack:r35.4.1 \
-  -t odin2-ros-driver:jetson-local .
-# JetPack 6 示例（L4T 36.4.0）：Ubuntu22 内从发行源码构建 Noetic。
-docker build -f docker/Dockerfile.jetson --build-arg BUILD_JOBS=2 \
-  --build-arg L4T_BASE_IMAGE=nvcr.io/nvidia/l4t-jetpack:r36.4.0 \
-  -t odin2-ros-driver:jetson-local .
-docker compose -f docker/compose.yaml -f docker/compose.jetson.yaml up -d
-```
-
-使用 GHCR 发布的镜像时设置 Compose 的专用镜像变量：
-
-```bash
-# 主机 L4T 35.4.1：JetPack 5
-export ODIN2_JETSON_IMAGE=ghcr.io/gloryhry/odin2_ros_driver-jetpack5:l4t35.4.1
-# 主机 L4T 36.4.0：JetPack 6（选择这一项时替换上一行）
-# export ODIN2_JETSON_IMAGE=ghcr.io/gloryhry/odin2_ros_driver-jetpack6:l4t36.4.0
-docker compose -f docker/compose.yaml -f docker/compose.jetson.yaml pull
-docker compose -f docker/compose.yaml -f docker/compose.jetson.yaml up -d
-```
-
-两个仓库也分别提供 `:latest`。通用 amd64／arm64 镜像命名见 [部署文档](deployment.md)。
-
-JetPack6 镜像保存 Noetic 的 source-manifest.rosinstall 供核查。Jammy 源码构建使用 rosconsole 官方 glog 日志后端，避免发行版 log4cxx 的 API 不兼容，并保留 rosout 与动态 logger level 服务；JetPack5 使用 Focal 的 Noetic 二进制包。专用镜像保留 ROS 和 NVIDIA 基础环境的工具，体积会大于通用运行镜像；不复制其他 JetPack 版本的宿主库。生产构建不需要设备，实际硬解须在匹配的 Jetson 上验收。Jetson workflow 在 `main`／`master` 推送、版本标签和手动触发时构建，并发布对应平台的 GHCR 镜像。
+当前 36.4.3 主机选择 `ghcr.io/gloryhry/odin2_ros_driver-jetpack6:l4t36.4.3` 并固定其 digest，先执行 `scripts/jetson-preflight.sh --image REF`，再按现有项目重建 `odin2`。旧 `latest` 别名仍对应 35.4.1／36.4.0。完整版本表、构建参数、Runtime 检查、保留双目配置的切换／回滚及真机验收见 [Jetson 部署手册](jetson-deployment.md)，分版本记录见 [jetson-validation.json](jetson-validation.json)。
 
 ## 诊断与验收
 
-在 /diagnostics 中查看各相机 decoder_backend、decoder_device、hardware_active、cpu_fallback_reason、decoder_failures。后端选择、硬解确认和回退会记录 ROS 日志。ChannelStatus 的 published 仍按发布过输出的 SDK 包去重，decoded_frames 包含解码完成但因限频未发布的帧；消息格式不变。
+在 /diagnostics 中查看各相机 decoder_backend、decoder_device、hardware_active、cpu_fallback_reason、decoder_failures。后端选择、硬解确认和回退会记录 ROS 日志。启用压缩图像解码后，实际 CPU 回退合并为 WARN，硬解恢复后清除当前回退告警；不覆盖 ERROR，未启用、仅透传和 NV12 转换不误报。ChannelStatus 的 published 仍按发布过输出的 SDK 包去重，decoded_frames 包含解码完成但因限频未发布的帧；消息格式不变。
 
-完整本地测试版本覆盖故障注入、30 秒冷却、参考帧恢复、独立相机、延迟最后一帧与旧 generation 阻止发布。实际硬解检查要求 hardware_active=true，并确认有效 bgr8 图像。驱动测试源码、GPU ROS 验证脚本、测试 CMake 配置和 Docker／CI 测试步骤保留在本地，未随本次提交交付；下列验证证据来自该完整本地版本，提交后的镜像只进行生产构建与动态库检查。
+无设备测试包含故障注入、30 秒冷却、参考帧恢复、独立相机、延迟最后一帧与旧 generation 阻止发布。实际硬解测试显式要求 hardware_active=true，避免 CPU 回退被误报为硬解通过：
+
+```bash
+docker build --target test -f docker/Dockerfile -t odin2-driver-hw-test .
+docker run --rm --gpus all -e NVIDIA_DRIVER_CAPABILITIES=compute,video,utility \
+  -e ODIN_TEST_REQUIRE_HARDWARE=1 odin2-driver-hw-test bash -c \
+  'source /ws/devel/setup.bash && /ws/devel/lib/odin2_ros_driver/driver_tests --gtest_filter=HardwareDecoder.RealHardwareWhenExplicitlyRequested'
+```
 
 硬解样例为 256×256 的 YUV420 JPEG、低延迟 H264/H265，另外保留 16×16 样例验证小尺寸 CPU 回退。实机还应验证实际 Odin2 profile／尺寸、双目、丢帧恢复、故障切换及资源释放；合成样例不代表设备固件和实机吞吐验收。
 
 ## 本轮验证记录（2026-10-14）
 
-结构化记录见 [hardware-decoding-validation.json](hardware-decoding-validation.json)。已有基础驱动记录保留在 validation.md／validation-results.json。本轮未发布镜像。记录的镜像与源码指纹属于包含测试的完整本地版本。
+结构化记录见 [hardware-decoding-validation.json](hardware-decoding-validation.json)。已有基础驱动记录保留在 validation.md／validation-results.json。本轮不提交或发布镜像。
 
 - 无 GPU 的 amd64／arm64 容器：28项单测通过，显式硬解测试跳过；原有多设备 ROS 集成、新增异步 ROS 集成及安装空间 smoke 分别记录。arm64 使用 BuildKit QEMU，不代表原生 ARM 性能。
 - NVIDIA RTX 5060 Laptop GPU，驱动595.91.07，通过 NVIDIA Container Toolkit 暴露给 amd64 容器：29项单测通过。256×256 MJPEG／H264／H265 分别确认 cuda/mjpeg、cuda/h264、cuda/hevc，两个独立上下文均产出 bgr8，原始 header 保持隔离，色彩与 CPU 输出对比通过。16×16不支持码流可回退 CPU。另以模拟 SDK 经过真实 ROS 工作线程，三格式双路均发布有效图像，diagnostics 确认硬解、图像／透传 header 匹配，SIGINT 正常退出。
@@ -74,4 +56,11 @@ JetPack6 镜像保存 Noetic 的 source-manifest.rosinstall 供核查。Jammy �
 - Ubuntu22 的75个 Noetic 源码包构建通过；GCC11.4、FFmpeg4.4／GStreamer1.20 下28项单测、两个 ROS 集成与安装空间 smoke 通过。NVIDIA GPU 下29项单测、双路三格式 ROS 硬解及 logger 服务通过。此项使用普通 Ubuntu 基础镜像；不等同于匹配 L4T 的 JetPack 镜像构建或 Jetson 硬解验收。
 - Intel／AMD VAAPI、QSV、V4L2 M2M、VDPAU、JetPack5/6、真实 Odin2 双目与长时间运行仍须在相应设备上验收。
 
-GPU ROS 验证使用本地保留的 `docs/evidence/gpu-ros-validation.py`。脚本只在测试容器内替换模拟 SDK 的压缩载荷；模拟能力表／编码消息尺寸仍为16×16，实际载荷和解码图像为256×256。因此记录验证工作线程和 diagnostics 的硬解路径，不验证真实设备的能力表或固件。
+ROS GPU 验证可用 [gpu-ros-validation.py](evidence/gpu-ros-validation.py) 复现。此脚本只在测试容器内替换模拟 SDK 的压缩载荷；模拟能力表／编码消息的尺寸仍为16×16，实际载荷和解码图像为256×256。因此它验证工作线程和 diagnostics 的硬解路径，不验证真实设备的能力表或固件。
+
+```bash
+docker run --rm --gpus all -e NVIDIA_DRIVER_CAPABILITIES=compute,video,utility \
+  -v "$PWD/docs/evidence/gpu-ros-validation.py:/gpu-ros-validation.py:ro" \
+  odin2-driver-hw-test bash -c \
+  'source /ws/devel/setup.bash && python3 /gpu-ros-validation.py'
+```

@@ -15,7 +15,8 @@
 namespace odin_driver::decoding {
 namespace {
 bool isJetson() {
-  if (access("/etc/nv_tegra_release", F_OK) == 0 || access("/dev/nvhost-nvdec", F_OK) == 0 ||
+  if (access("/run/host-nv_tegra_release", F_OK) == 0 ||
+      access("/etc/nv_tegra_release", F_OK) == 0 || access("/dev/nvhost-nvdec", F_OK) == 0 ||
       access("/dev/v4l2-nvdec", F_OK) == 0)
     return true;
   std::ifstream input("/proc/device-tree/compatible", std::ios::binary);

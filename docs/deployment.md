@@ -22,15 +22,18 @@
 ## Docker 和 Compose
 
 ```bash
-# 单架构本机编译（生产构建与动态库检查）
+# 单架构本机编译（测试自动执行）
 docker build -f docker/Dockerfile --build-arg BUILD_JOBS=4 -t odin2-ros-driver:local .
 # 多架构，适用于已配置 QEMU 的 Buildx 环境
 docker buildx build --platform linux/amd64,linux/arm64 \
   -f docker/Dockerfile --build-arg BUILD_JOBS=2 \
   -t ghcr.io/owner/repository:manual --push .
+# 只执行测试并导出 Catkin XML 报告
+docker buildx build --platform linux/amd64 --target test-results \
+  -f docker/Dockerfile --output type=local,dest=/tmp/odin2-reports .
 ```
 
-Docker 是 build → install → runtime 多阶段，runtime 构建检查正式节点的动态库依赖。驱动测试源码、测试构建配置与 Docker／CI 测试执行步骤保留在本地，提交后的镜像不执行 gtest、ROS 模拟集成或安装空间 smoke；完整本地版本的验证结果见验证文档。通用运行镜像不包含编译器；Jetson 镜像保留匹配的 L4T／ROS 基础环境。
+Docker 是 build → test → install → runtime 多阶段，test-results 为独立 scratch 导出阶段。runtime 依赖通过测试的 install，并执行安装空间 smoke：验证 ldd、ROS Python 消息和真实 SDK 节点状态，不要求连接硬件。运行镜像不包含编译器和 mock 节点。
 
 ```bash
 mkdir -p calibration output
@@ -56,7 +59,7 @@ Compose 使用 init、host 网络、restart unless-stopped 和120秒关闭宽限
 
 | 触发 | 行为／标签 |
 |---|---|
-| pull_request | 两架构编译和运行时动态库依赖检查，不推送 |
+| pull_request | 通用两架构及 Jetson 18 项矩阵编译、gtest、ROS 集成、runtime smoke，导出报告，不推送 |
 | main / master push | 两架构分别构建成功后发布平台镜像，再合并通用多架构 manifest；更新各自 `latest` |
 | vX.Y.Z tag（含预发布） | 通用、amd64、arm64、JetPack 5/6 镜像均发布版本标签并更新对应 `latest` |
 | workflow_dispatch | 按所选 ref 构建／发布对应 workflow 的镜像并更新 `latest` |
@@ -68,12 +71,12 @@ Compose 使用 init、host 网络、restart unless-stopped 和120秒关闭宽限
 | 自动匹配 amd64 / arm64 | `ghcr.io/gloryhry/odin2_ros_driver:latest` | Ubuntu20 / ROS Noetic，多架构 manifest |
 | x86_64 | `ghcr.io/gloryhry/odin2_ros_driver-amd64:latest` | Ubuntu20 / ROS Noetic |
 | 通用 ARM64 | `ghcr.io/gloryhry/odin2_ros_driver-arm64:latest` | Ubuntu20 / ROS Noetic |
-| JetPack 5 | `ghcr.io/gloryhry/odin2_ros_driver-jetpack5:latest` | L4T 35.4.1 / Ubuntu20 / ROS Noetic |
-| JetPack 6 | `ghcr.io/gloryhry/odin2_ros_driver-jetpack6:latest` | L4T 36.4.0 / Ubuntu22 / ROS Noetic 源码构建 |
+| JetPack 5 | `ghcr.io/gloryhry/odin2_ros_driver-jetpack5:latest` | 别名目标 L4T 35.4.1 / Ubuntu20 / ROS Noetic |
+| JetPack 6 | `ghcr.io/gloryhry/odin2_ros_driver-jetpack6:latest` | 别名目标 L4T 36.4.0 / Ubuntu22 / ROS Noetic 源码构建 |
 
-`latest` 指向对应平台最近成功发布的构建，包括手动选择的 ref 和预发布版本；需要固定版本时使用版本标签或 digest。Jetson 另提供 `-jetpack5:l4t35.4.1`、`-jetpack6:l4t36.4.0`，仍须核对主机 L4T。后续构建不再生成 `sha-xxx` 或 `edge` 标签，已有历史标签不删除。
+通用／amd64／arm64 的 `latest` 指向对应平台最近成功发布的构建，包括手动选择的 ref 和预发布版本；通用 workflow 不生成新的 `sha-xxx` 或 `edge` 标签。Jetson 为全部 18 个列出的 L4T 提供 `l4t<VERSION>`、`sha-<完整提交号>-l4t<VERSION>` 以及版本发布的 `<发布版本>-l4t<VERSION>`。Jetson 的既有 `latest` 和无 L4T 后缀版本别名保留在 35.4.1／36.4.0；部署必须选择宿主对应的 L4T 标签及 digest。当前 36.4.3 使用 `-jetpack6:l4t36.4.3`。完整范围、预检、切换和回滚见 [Jetson 部署手册](jetson-deployment.md)。历史标签不删除。
 
-镜像前缀自动取小写 `ghcr.io/<owner>/<repository>`，平台后缀固定。通用 workflow 的 publish job 依赖两项 build 全部成功，先按架构发布 `-amd64`／`-arm64` 镜像，再读取两个构建成功的 digest 并合并 manifest；Job summary 记录 manifest 和架构 digest。OCI 标签含 source、revision 与 SDK 版本，镜像内 `/opt/odin2/share/odin2_ros_driver/build-info.txt` 记录 SDK、源码修订、目标架构、编译器。SBOM 和 provenance 随 CI 发布。发布任务的每架构 digest 以 artifact 保存。
+镜像前缀自动取小写 `ghcr.io/<owner>/<repository>`，平台后缀固定。通用 workflow 的 publish job 依赖两项 build 全部成功，先按架构发布 `-amd64`／`-arm64` 镜像，再读取两个已测试的 digest 并合并 manifest；Job summary 记录 manifest 和架构 digest。OCI 标签含 source、revision 与 SDK 版本，镜像内 `/opt/odin2/share/odin2_ros_driver/build-info.txt` 记录 SDK、源码修订、目标架构、编译器。SBOM 和 provenance 随 CI 发布。PR 测试 XML 和每架构 digest 分别以 artifact 保存。
 
 ```bash
 # 检查通用多架构入口和指定平台镜像
@@ -83,7 +86,7 @@ docker buildx imagetools inspect ghcr.io/gloryhry/odin2_ros_driver-amd64:latest
 docker pull ghcr.io/gloryhry/odin2_ros_driver@sha256:YOUR_MANIFEST_DIGEST
 ```
 
-自动部署在本方案中指将镜像发布到 GHCR，不自动登录设备／重启生产容器。设备端通过 Compose pull 与 up 使用指定标签或 digest 更新。Jetson workflow 使用原生 ARM runner，按匹配的 L4T 分别构建并发布到 `-jetpack5`／`-jetpack6`。同一 workflow 的发布构建串行执行，避免不同 ref 同时覆盖 `latest`。通用镜像仅在两架构构建成功后发布。镜像构建与发布成功不代表实机硬件解码验收。
+自动部署在本方案中指将镜像发布到 GHCR，不自动登录设备／重启生产容器。设备端通过 Compose pull 与 up 使用指定标签或 digest 更新。Jetson workflow 从统一清单生成全部 18 项原生 ARM 构建，汇总验证后发布到 `-jetpack5`／`-jetpack6`。同一 workflow 的发布构建串行执行，避免不同 ref 同时覆盖 `latest`。通用镜像仅在两架构构建成功后发布。镜像构建与发布成功不代表实机硬件解码验收。
 
 ## 启动失败诊断
 

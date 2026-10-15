@@ -20,5 +20,7 @@
   <build_depend>libgstreamer-plugins-base1.0-dev</build_depend>
   <exec_depend>gstreamer1.0-plugins-base</exec_depend>
   <exec_depend>gstreamer1.0-plugins-bad</exec_depend>
+  <test_depend>rostest</test_depend><test_depend>rospy</test_depend>
+  <test_depend>libpcl-all-dev</test_depend>
   <export/>
 </package>
