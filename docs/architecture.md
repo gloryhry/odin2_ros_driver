@@ -6,7 +6,7 @@
 flowchart LR
   YAML[YAML 与 ROS 管理接口] --> C[每设备控制线程]
   C --> F[SdkFacade 封装]
-  F --> SDK[原版 SDK 3.3.0]
+  F --> SDK[SDK 3.3.0 与驱动构建兼容适配]
   SDK --> CB[复制 SDK 回调]
   CB --> Q[每设备每通道有界队列]
   Q --> W[工作线程与独立双目解码器]
@@ -18,6 +18,7 @@ flowchart LR
 
 - `core.hpp/config.cpp`：配置、能力验证、队列、时间映射。
 - `sdk.hpp/sdk.cpp`：完整 SDK 调用集中在 SdkFacade；生产用 LiveSdk，测试注入 MockSdk，不修改供应商代码。
+- `cmake/OdinSdkStreamCompat.cmake` 与 `src/sdk_stream_compat.hpp`：为 SDK 3.3.0 的流启动顺序提供构建适配，仅生成两份编译用源码副本，`sdk_api` 原文件保持不变；SDK 内容变化导致适配点不匹配时，配置阶段明确失败，要求重新审核。
 - `conversion.cpp`：直接构建 PointCloud2，避免引入 PCL；消息单位、字段与 frame 转换。
 - `decoder.cpp`：后端选择、参数集与参考帧恢复；FFmpeg／Jetson GStreamer 自动硬解与 CPU 回退，各相机持有独立上下文。
 - `driver.cpp`：设备生命周期、管理服务、动态配置、队列调度、状态／诊断、异步文件任务。
@@ -52,6 +53,7 @@ H264／H265 接收 Annex B 码流，用实际 NAL 判断随机接入帧，不把
 | SLAM／Odom 同步可按设备开关 | 默认关闭；world 模式开启并内部订阅LF，frame=odom |
 | 四元数为 x,y,z,w；Odom covariance 仅18项 | 标准消息校验／归一化，用用户36项；自定义消息保留原始18项和原四元数 |
 | StartStream 只为相机接收 acquisition mode | 拒绝非相机采集宽高、fps、format |
+| StartStream 先发订阅，再建立数据监听；固件 3.1.3 立即 TCP 回连，未监听会返回失败，继而使整个设备反复初始化 | 构建适配在端口分配后、订阅前启动 capture；失败停止监听、释放端口并尝试取消订阅；每次同步调用的准备回调由线程局部作用域隔离，相机仍使用配置要求的 TCP |
 | 能力格式可为位掩码 | 验证所选单一位及模式组合，拒绝 unknown=255 作为有效支持 |
 | H264 有专用组装；H265 走通用图像组装 | 按设备能力启用 H265，EncodedFrame 保留格式，自动优先硬件 HEVC 解码 |
 | StartTelemetry 在一些失败分支仍可能返回 kOk | 同时查询订阅并观测真实到达；无数据告警 |
@@ -65,6 +67,8 @@ H264／H265 接收 Annex B 码流，用实际 NAL 判断随机接入帧，不把
 ## 构建与版权交付
 
 通过 add_subdirectory 在 Catkin build 下构建 SDK，ODIN_BUILD_SAMPLES=OFF，SDK 输出重定向到 devel/lib；安装保留完整 SO 版本链和公共头文件。驱动／节点设置相对 `$ORIGIN` RPATH，并依靠标准 Catkin setup 配置安装空间。完整本地测试版本的 runtime smoke 在移动到 `/opt/odin2` 后检查动态库、Python 消息和真实 SDK 节点状态发布；该测试脚本保留在本地，提交后的镜像只执行动态库检查。
+
+TCP 启动兼容适配编译的是 build 目录中的 `odin2.cpp`、`OdinCommand.cpp` 副本，包含在最终 `libodin_sdk.so` 中；供应商源码包仍保存原始 SDK，驱动源码包同时交付适配 CMake 和辅助头文件，可重现该构建。
 
 镜像包含 SDK 与驱动对应源码包、LICENSE、第三方声明、GPL-2 文本及 build-info.txt。源码 archive 和编译脚本对应镜像构建输入；CI OCI revision 标签保存提交版本，provenance/SBOM 保存构建来源与依赖。SDK 原许可缺失不由驱动代为授权，详见 THIRD_PARTY_NOTICES.md。
 

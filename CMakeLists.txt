@@ -31,6 +31,7 @@ set(ODIN_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
 set(ODIN_SDK_LIB_OUTPUT_DIR "${CATKIN_DEVEL_PREFIX}/lib" CACHE PATH "" FORCE)
 set(ODIN_SDK_ENABLE_LTO ${ODIN_DRIVER_LTO} CACHE BOOL "" FORCE)
 add_subdirectory(sdk_api ${CMAKE_CURRENT_BINARY_DIR}/vendor EXCLUDE_FROM_ALL)
+include(cmake/OdinSdkStreamCompat.cmake)
 add_library(odin2_driver_core src/config.cpp src/conversion.cpp src/decoder.cpp
   src/decoder_ffmpeg.cpp src/decoder_jetson.cpp src/sdk.cpp src/driver.cpp)
 target_include_directories(odin2_driver_core PUBLIC include ${catkin_INCLUDE_DIRS}
