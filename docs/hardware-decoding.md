@@ -12,7 +12,7 @@ CUDA 设备按编号、DRM render 节点按数字顺序尝试。旧版 FFmpeg �
 
 Jetson 使用 appsrc → h264parse/h265parse/jpegparse → nvv4l2decoder → nvvidconv → appsink，MJPEG 开启 mjpeg=true。BGRx 主机帧转为 bgr8；不禁用 DPB，保留 B 帧兼容性。工作线程每 5 ms 轮询未完成任务。输出携带原始 header、接收时间和两级 generation；重新配置后旧任务不会发布。
 
-输入包上限 64 MiB，参数 NAL 上限各 256 KiB，未完成上下文上限 64 个；GStreamer appsrc 限制 64 MiB，appsink 最多 8 帧。另保留最多一个独立帧用于异步故障后重试。持续积压至少 8 帧且 5 秒没有输出视为后端停滞；正常 EAGAIN／重排序不直接视为故障。重置关闭管线并丢弃旧缓冲。
+输入包上限 64 MiB，参数 NAL 上限各 256 KiB，未完成上下文上限 64 个；GStreamer appsrc 限制 64 MiB，appsink 最多 8 帧。另保留最多一个独立帧用于异步故障后重试。MJPEG存在任意pending，或仅等待一个可恢复视频关键帧时，5秒无输出即判停滞；依赖视频尾帧保留至少8个pending的条件，避免误判正常重排序。计时从pending由空变为非空开始，实际输出刷新，清空后取消；长期空闲不消耗新任务的超时预算。重置先停止后端再丢弃旧缓冲，按其他硬件、CPU顺序恢复安全独立帧并保留原始上下文。
 
 ## 构建与容器
 

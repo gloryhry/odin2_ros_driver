@@ -35,7 +35,7 @@ struct DeviceSettings {
   int64_t time_offset_ns = 0;
   bool slam_world = false, broadcast_tf = false, covariance_configured = false;
   std::optional<uint8_t> sensor_mode;
-  std::optional<sdk::OdinLidarFilterParams> initial_filters;
+  std::optional<sdk::OdinAdaptiveFilterParam> initial_adaptive;
   uint32_t sync_lag = 10, command_timeout_ms = 1000;
   size_t worker_threads = 2;
   std::vector<int> cpu_affinity;

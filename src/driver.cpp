@@ -195,7 +195,7 @@ struct DeviceDriver::Impl {
   std::string state = "disconnected", last_error;
   std::map<uint64_t, msg::TransferStatus> jobs;
   sdk::OdinPtpSyncStatus last_ptp;
-  std::optional<sdk::OdinLidarFilterParams> desired_filters;
+  std::optional<sdk::OdinAdaptiveFilterParam> desired_adaptive, pending_adaptive_restore;
   std::optional<sdk::NetworkAttribute> pending_network;
   ros::Publisher status_pub, transfer_pub;
   ros::WallTime connected_at;
@@ -214,7 +214,7 @@ struct DeviceDriver::Impl {
         cfg(std::move(c)),
         sdk(std::move(s)),
         clock(cfg.time_mode, cfg.time_offset_ns) {
-    desired_filters = cfg.initial_filters;
+    desired_adaptive = cfg.initial_adaptive;
     for (auto ch : channels()) {
       auto r = std::make_unique<Runtime>(discovery);
       const auto& settings = cfg.streams.at(ch);
@@ -332,43 +332,75 @@ struct DeviceDriver::Impl {
       return sdk->execute(handle, c);
     });
   }
-  // Runs on the controller: read back, apply, and restore on any failure.
-  Reply applyFilters(const sdk::OdinLidarFilterParams& requested) {
-    validateFilters(requested);
+  static bool sameAdaptive(const sdk::OdinAdaptiveFilterParam& a,
+                           const sdk::OdinAdaptiveFilterParam& b) {
+    return a.cdf_percentile == b.cdf_percentile && a.outdoor_threshold == b.outdoor_threshold;
+  }
+  // Controller-only. A successful write alone never commits effective state.
+  Reply writeAdaptive(const sdk::OdinAdaptiveFilterParam& value) {
     Command c;
-    c.kind = CommandKind::GetFilters;
+    c.kind = CommandKind::SetAdaptive;
     c.timeout_ms = snapshot().command_timeout_ms;
-    auto previous = sdk->execute(handle, c);
+    c.adaptive = value;
+    auto reply = sdk->execute(handle, c);
+    if (!reply.ok())
+      return reply;
+    c.kind = CommandKind::GetAdaptive;
+    reply = sdk->execute(handle, c);
+    if (reply.ok() && !sameAdaptive(reply.adaptive, value))
+      return failure("adaptive readback does not match requested values",
+                     sdk::OdinResult::kCommunicationError);
+    return reply;
+  }
+  // Runs on the controller: preserve the actual pre-write value independently
+  // from the last accepted configuration, including when no desired value exists.
+  Reply applyAdaptive(const sdk::OdinAdaptiveFilterParam& requested,
+                      std::optional<sdk::OdinAdaptiveFilterParam> baseline = {},
+                      bool keep_restore = false) {
+    sdk::OdinLidarFilterParams validation;
+    validation.has_adaptive = true;
+    validation.adaptive = requested;
+    validateFilters(validation);
+    Command c;
+    c.kind = CommandKind::GetAdaptive;
+    c.timeout_ms = snapshot().command_timeout_ms;
+    Reply previous;
+    if (baseline)
+      previous.adaptive = *baseline;
+    else
+      previous = sdk->execute(handle, c);
     if (!previous.ok())
       return previous;
-    c.kind = CommandKind::SetFilters;
-    c.filters = requested;
-    auto changed = sdk->execute(handle, c);
+    pending_adaptive_restore = previous.adaptive;
+    auto changed = writeAdaptive(requested);
     if (changed.ok()) {
-      c.kind = CommandKind::GetFilters;
-      changed = sdk->execute(handle, c);
-    }
-    if (changed.ok()) {
-      desired_filters = changed.filters;
+      desired_adaptive = changed.adaptive;
+      if (!keep_restore)
+        pending_adaptive_restore.reset();
       {
         std::lock_guard<std::mutex> lock(mutex);
-        cfg.initial_filters = changed.filters;
+        cfg.initial_adaptive = changed.adaptive;
       }
       return changed;
     }
-    c.kind = CommandKind::SetFilters;
-    c.filters = previous.filters;
-    auto restored = sdk->execute(handle, c);
+    auto restored = writeAdaptive(previous.adaptive);
     if (!restored.ok()) {
       disconnect();
       std::lock_guard<std::mutex> lock(mutex);
       state = "retrying";
-      last_error = "filter rollback failed";
+      last_error = "adaptive rollback could not be verified: " + restored.message;
+      // The failed reply must not expose unverified values as effective.
+      changed.adaptive = {};
+      changed.adaptive.cdf_percentile = changed.adaptive.outdoor_threshold = 0;
+    } else {
+      if (!keep_restore)
+        pending_adaptive_restore.reset();
+      changed.adaptive = previous.adaptive;
+      changed.filters.has_adaptive = true;
+      changed.filters.adaptive = previous.adaptive;
     }
-    if (restored.ok())
-      changed.filters = previous.filters;
-    changed.message += restored.ok() ? "; previous filters restored"
-                                     : "; filter rollback failed; device not ready";
+    changed.message += restored.ok() ? "; previous adaptive values restored and verified"
+                                     : "; adaptive rollback unverified; device not ready";
     return changed;
   }
   void invalidateLocked() {
@@ -404,7 +436,7 @@ struct DeviceDriver::Impl {
       handle = 0;
     }
   }
-  Reply connectDevice() {
+  Reply connectDevice(bool keep_adaptive_restore = false) {
     const auto settings = snapshot();
     {
       std::lock_guard<std::mutex> lock(mutex);
@@ -423,8 +455,7 @@ struct DeviceDriver::Impl {
     std::vector<sdk::DiscoveredDevice> matches;
     for (auto& d : list)
       if ((settings.device_ip.empty() || d.network.ip_address == settings.device_ip) &&
-          (settings.sn.empty() || d.sn == settings.sn) &&
-          (host_ip.empty() || d.host_ip == host_ip))
+          (settings.sn.empty() || d.sn == settings.sn) && (host_ip.empty() || d.host_ip == host_ip))
         matches.push_back(d);
     if (matches.size() != 1)
       return failure(matches.empty()
@@ -443,9 +474,9 @@ struct DeviceDriver::Impl {
     if (!handle)
       return failure("SDK connection failed", sdk::OdinResult::kCommunicationError);
     sdk->callbacks(handle, [this](Channel ch, Packet p) { enqueue(ch, std::move(p)); });
-    return configureDevice(settings);
+    return configureDevice(settings, keep_adaptive_restore);
   }
-  Reply configureDevice(const DeviceSettings& settings) {
+  Reply configureDevice(const DeviceSettings& settings, bool keep_adaptive_restore) {
     {
       std::lock_guard<std::mutex> lock(mutex);
       state = "configuring";
@@ -489,10 +520,11 @@ struct DeviceDriver::Impl {
       if (!r.ok())
         return r;
     }
-    if (desired_filters) {
-      c.kind = CommandKind::SetFilters;
-      c.filters = *desired_filters;
-      r = execute("SetFilterParam");
+    // Keep a pending restore until the complete initialization succeeds. A
+    // later stream/start failure must not lose the recovery obligation.
+    const auto restore = pending_adaptive_restore ? pending_adaptive_restore : desired_adaptive;
+    if (restore) {
+      r = writeAdaptive(*restore);
       if (!r.ok())
         return r;
     }
@@ -535,9 +567,11 @@ struct DeviceDriver::Impl {
       last_error.clear();
       ++reconnects;
     }
+    if (!keep_adaptive_restore)
+      pending_adaptive_restore.reset();
     return r;
   }
-  Reply applySettings(const DeviceSettings& candidate) {
+  Reply applySettings(const DeviceSettings& candidate, bool keep_adaptive_restore = false) {
     auto previous = snapshot();
     {
       std::lock_guard<std::mutex> lock(mutex);
@@ -551,7 +585,7 @@ struct DeviceDriver::Impl {
     }
     Reply r;
     try {
-      r = connectDevice();
+      r = connectDevice(keep_adaptive_restore);
     } catch (const std::exception& e) {
       r = failure(e.what());
     }
@@ -564,7 +598,7 @@ struct DeviceDriver::Impl {
     }
     Reply restored;
     try {
-      restored = connectDevice();
+      restored = connectDevice(keep_adaptive_restore);
     } catch (const std::exception& e) {
       restored = failure(e.what());
     }
@@ -619,8 +653,8 @@ struct DeviceDriver::Impl {
             state = "retrying";
             last_error = r.message;
           }
-          ROS_WARN_STREAM_THROTTLE(10, snapshot().name << ": " << r.message << "; retry in "
-                                                     << backoff << "s");
+          ROS_WARN_STREAM_THROTTLE(
+              10, snapshot().name << ": " << r.message << "; retry in " << backoff << "s");
           next = std::chrono::steady_clock::now() + std::chrono::seconds(backoff);
           backoff = std::min(30u, backoff * 2);
         } else {
@@ -706,7 +740,23 @@ struct DeviceDriver::Impl {
         r.status.subscribed = true;
       r.status.receiving = true;
       ++r.status.received;
-      if (auto sequence = packetSequence(p)) {
+      if (!s.enabled)
+        return;
+      const auto received = ros::Time::now();
+      // Mapping may reset an epoch or advance its anchor. Stage it so rejected
+      // duplicates, invalid timestamps and reordered packets cannot alter time.
+      auto next_clock = clock;
+      bool reset = false;
+      auto stamp = next_clock.map(ch, packetTimestamp(p), received, reset);
+      if (!stamp) {
+        if (received.isZero())
+          ++r.status.invalid_packets;
+        else
+          ++r.status.out_of_order;
+        return;
+      }
+      const auto sequence = packetSequence(p);
+      if (sequence && !reset) {
         uint32_t delta = *sequence - r.sequence;
         if (r.have_sequence && (delta == 0 || delta >= 0x80000000u)) {
           ++r.status.out_of_order;
@@ -720,30 +770,26 @@ struct DeviceDriver::Impl {
             r.queue.clear();
           }
         }
-        if (!r.have_sequence || delta < 0x80000000u) {
-          r.sequence = *sequence;
-          r.have_sequence = true;
-        }
       }
-      if (!s.enabled)
-        return;
-      const auto received = ros::Time::now();
-      bool reset = false;
-      auto stamp = clock.map(ch, packetTimestamp(p), received, reset);
       if (reset) {
         ++generation;
         for (auto& v : streams) {
-          v.second->queue.clear();
-          ++v.second->decode_generation;
-          v.second->have_sequence = false;
+          auto& stream = *v.second;
+          stream.queue.clear();
+          ++stream.decode_generation;
+          stream.have_sequence = false;
+          stream.last_publish = {};
+          stream.last_decoded_publish = {};
+          stream.last_wire_publish = {};
+          stream.published_packets.clear();
+          stream.decoder_info.hardware_active = false;
         }
+        data_cv.notify_all();
       }
-      if (!stamp) {
-        if (received.isZero())
-          ++r.status.invalid_packets;
-        else
-          ++r.status.out_of_order;
-        return;
+      clock = std::move(next_clock);
+      if (sequence) {
+        r.sequence = *sequence;
+        r.have_sequence = true;
       }
       Envelope value;
       value.channel = ch;
@@ -968,6 +1014,7 @@ void DeviceDriver::Impl::process(const Envelope& e) {
   if (auto seq = packetSequence(e.packet))
     header.seq = *seq;
   std::vector<std::function<void()>> publications;
+  std::vector<std::function<void()>> compressed_publications;
   auto publish = [&](ros::Publisher pub, auto value) {
     publications.emplace_back([pub, value = std::move(value)] { pub.publish(value); });
   };
@@ -1029,7 +1076,8 @@ void DeviceDriver::Impl::process(const Envelope& e) {
         out.header = header;
         out.format = "bgr8; jpeg compressed bgr8";
         out.data = packet.payload;
-        publish(r.compressed, std::move(out));
+        compressed_publications.emplace_back(
+            [pub = r.compressed, out = std::move(out)] { pub.publish(out); });
       }
       if (s.publish_decoded) {
         if (r.decoder_seen != decode_generation || r.decoder_epoch != e.generation) {
@@ -1064,17 +1112,27 @@ void DeviceDriver::Impl::process(const Envelope& e) {
     return;
   if (isCamera(e.channel) && e.decode_generation != r.decode_generation)
     return;
-  const auto rate_time = isCamera(e.channel) ? r.last_wire_publish : r.last_publish;
-  if (s.publish_rate > 0 && !rate_time.isZero() &&
-      (ros::WallTime::now() - rate_time).toSec() < 1 / s.publish_rate)
+  const auto now = ros::WallTime::now();
+  if (!isCamera(e.channel) && s.publish_rate > 0 && !r.last_publish.isZero() &&
+      (now - r.last_publish).toSec() < 1 / s.publish_rate)
     return;
-  if (publications.empty())
-    return;
+  bool sent = !publications.empty();
+  // Encoded access units must retain their reference chain. Only independent
+  // compressed images share this host rate gate; decoded images have their own.
   for (auto& send : publications)
     send();
+  if (!compressed_publications.empty() &&
+      (s.publish_rate == 0 || r.last_wire_publish.isZero() ||
+       (now - r.last_wire_publish).toSec() >= 1 / s.publish_rate)) {
+    for (auto& send : compressed_publications)
+      send();
+    r.last_wire_publish = now;
+    sent = true;
+  }
+  if (!sent)
+    return;
   if (isCamera(e.channel)) {
     cameraPublished(r, DecodeContext{header, e.generation, e.decode_generation, e.wall_received});
-    r.last_wire_publish = ros::WallTime::now();
   } else
     ++r.status.published;
   r.last_publish = ros::WallTime::now();
@@ -1179,21 +1237,35 @@ msg::DeviceConfig DeviceDriver::Impl::dynamicSnapshot() {
   READ_DYNAMIC(telemetry, kTelemetry);
 #undef READ_DYNAMIC
   v.apply_filters = false;
+  v.apply_adaptive = false;
   v.confidence_threshold = 0;
   v.min_depth = 150;
   v.cdf_percentile = 7000;
   v.outdoor_threshold = 3000;
-  if (c.initial_filters) {
-    const auto& f = *c.initial_filters;
-    v.confidence_threshold = f.confidence.confidence_threshold;
-    v.min_depth = f.range.min_depth;
-    v.cdf_percentile = f.adaptive.cdf_percentile;
-    v.outdoor_threshold = f.adaptive.outdoor_threshold;
+  if (c.initial_adaptive) {
+    v.cdf_percentile = c.initial_adaptive->cdf_percentile;
+    v.outdoor_threshold = c.initial_adaptive->outdoor_threshold;
   }
   return v;
 }
 void DeviceDriver::Impl::reconfigure(msg::DeviceConfig& v, uint32_t) {
   if (dynamic_initializing) {
+    v = last_dynamic;
+    return;
+  }
+  // Validate the complete batch before reconnecting any streams. Deprecated
+  // controls must never partially apply a mixed stream/filter request.
+  if (v.apply_filters || v.confidence_threshold != last_dynamic.confidence_threshold ||
+      v.min_depth != last_dynamic.min_depth) {
+    ROS_WARN_STREAM(snapshot().name
+                    << " dynamic configuration failed: UNSUPPORTED_FILTER: deprecated "
+                       "confidence/min_depth/apply_filters controls; use apply_adaptive");
+    v = last_dynamic;
+    return;
+  }
+  if (v.apply_adaptive && (v.cdf_percentile < 1 || v.cdf_percentile > 10000)) {
+    ROS_WARN_STREAM(snapshot().name
+                    << " dynamic configuration failed: cdf_percentile must be 1..10000");
     v = last_dynamic;
     return;
   }
@@ -1226,21 +1298,67 @@ void DeviceDriver::Impl::reconfigure(msg::DeviceConfig& v, uint32_t) {
       current.streams.at(ch).publish_rate = candidate.streams.at(ch).publish_rate;
     }
     Reply reply;
-    if (needs_update)
-      reply = applySettings(current);
-    if (reply.ok() && v.apply_filters) {
-      sdk::OdinLidarFilterParams f;
-      f.has_confidence = f.has_range = f.has_adaptive = true;
-      f.confidence.confidence_threshold = v.confidence_threshold;
-      f.range.min_depth = v.min_depth;
-      f.adaptive.cdf_percentile = v.cdf_percentile;
-      f.adaptive.outdoor_threshold = v.outdoor_threshold;
-      reply = applyFilters(f);
-      if (!reply.ok() && needs_update) {
-        auto restored = applySettings(previous);
-        if (!restored.ok())
-          reply.message += "; stream rollback failed";
+    const bool mixed_adaptive = needs_update && v.apply_adaptive;
+    std::optional<sdk::OdinAdaptiveFilterParam> batch_baseline;
+    if (mixed_adaptive) {
+      // Capture the physical pre-batch value before a stream reconnect can
+      // replay the last accepted desired value. Reject invalid streams before
+      // acquiring a recovery obligation.
+      {
+        std::lock_guard<std::mutex> lock(mutex);
+        for (const auto& p : current.streams)
+          validateStream(p.first, p.second, capabilities);
       }
+      Command c;
+      c.kind = CommandKind::GetAdaptive;
+      c.timeout_ms = current.command_timeout_ms;
+      reply = sdk->execute(handle, c);
+      if (!reply.ok())
+        return reply;
+      batch_baseline = reply.adaptive;
+      pending_adaptive_restore = batch_baseline;
+    }
+    if (needs_update)
+      reply = applySettings(current, mixed_adaptive);
+    if (reply.ok() && v.apply_adaptive) {
+      reply = applyAdaptive(
+          {static_cast<uint16_t>(v.cdf_percentile), static_cast<uint16_t>(v.outdoor_threshold)},
+          batch_baseline, mixed_adaptive);
+      if (!reply.ok() && needs_update) {
+        // Restore the previous stream configuration even if adaptive recovery
+        // keeps the connection unavailable. Do not roll back to the candidate
+        // again when this recovery connection fails.
+        disconnect();
+        {
+          std::lock_guard<std::mutex> lock(mutex);
+          cfg = previous;
+        }
+        Reply restored;
+        try {
+          restored = connectDevice(true);
+        } catch (const std::exception& e) {
+          restored = failure(e.what());
+        }
+        if (!restored.ok()) {
+          disconnect();
+          std::lock_guard<std::mutex> lock(mutex);
+          state = "retrying";
+          last_error = "dynamic rollback failed: " + restored.message;
+          reply.message += "; stream rollback awaiting verified reconnect";
+        }
+      }
+    }
+    if (mixed_adaptive) {
+      // Both candidate and rollback reconnects retain the baseline. Only a
+      // completely initialized connection proves that this batch has either
+      // committed or restored the old stream/physical adaptive state.
+      bool recovered;
+      {
+        std::lock_guard<std::mutex> lock(mutex);
+        recovered = ready;
+      }
+      if (recovered)
+        pending_adaptive_restore.reset();
     }
     return reply;
   });
@@ -1249,8 +1367,9 @@ void DeviceDriver::Impl::reconfigure(msg::DeviceConfig& v, uint32_t) {
     v = dynamicSnapshot();
   } else {
     v.apply_filters = false;
-    last_dynamic = v;
+    v.apply_adaptive = false;
   }
+  last_dynamic = v;
 }
 void DeviceDriver::Impl::registerServices() {
   service<msg::GetDeviceInfo>("get_device_info", [this](auto&, auto& out) {
@@ -1395,8 +1514,13 @@ void DeviceDriver::Impl::registerServices() {
   modes("sync_mode", CommandKind::GetSyncMode, CommandKind::SetSyncMode, 1);
   service<msg::GetFilters>("get_filters", [this](auto&, auto& out) {
     Command c;
-    c.kind = CommandKind::GetFilters;
+    c.kind = CommandKind::GetAdaptive;
     auto r = command(c);
+    if (r.ok()) {
+      r.filters.has_adaptive = true;
+      r.filters.adaptive = r.adaptive;
+      r.message = "adaptive parameters only; confidence and range filters are unsupported";
+    }
     out.result = result(r);
     out.filters = filters(r.filters);
     return true;
@@ -1406,12 +1530,21 @@ void DeviceDriver::Impl::registerServices() {
     try {
       auto f = filters(in.filters);
       validateFilters(f);
-      r = runControl([this, f] { return applyFilters(f); });
+      r = runControl([this, f] { return applyAdaptive(f.adaptive); });
     } catch (const std::exception& e) {
       r = failure(e.what());
     }
+    if (r.ok()) {
+      r.filters.has_adaptive = true;
+      r.filters.adaptive = r.adaptive;
+    }
     out.result = result(r);
     out.effective = filters(r.filters);
+    {
+      boost::recursive_mutex::scoped_lock lock(dynamic_mutex);
+      last_dynamic = dynamicSnapshot();
+      dynamic->updateConfig(last_dynamic);
+    }
     return true;
   });
   service<msg::GetAdaptive>("get_adaptive", [this](auto&, auto& out) {
@@ -1419,8 +1552,8 @@ void DeviceDriver::Impl::registerServices() {
     c.kind = CommandKind::GetAdaptive;
     auto r = command(c);
     out.result = result(r);
-    out.cdf_percentile = r.adaptive.cdf_percentile;
-    out.outdoor_threshold = r.adaptive.outdoor_threshold;
+    out.cdf_percentile = r.ok() ? r.adaptive.cdf_percentile : 0;
+    out.outdoor_threshold = r.ok() ? r.adaptive.outdoor_threshold : 0;
     return true;
   });
   service<msg::SetAdaptive>("set_adaptive", [this](auto& in, auto& out) {
@@ -1429,14 +1562,17 @@ void DeviceDriver::Impl::registerServices() {
       return true;
     }
     auto r = runControl([this, percentile = in.cdf_percentile, threshold = in.outdoor_threshold] {
-      sdk::OdinLidarFilterParams f;
-      f.has_adaptive = true;
-      f.adaptive = {percentile, threshold};
-      return applyFilters(f);
+      return applyAdaptive({percentile, threshold});
     });
-    out.effective_cdf_percentile = r.filters.adaptive.cdf_percentile;
-    out.effective_outdoor_threshold = r.filters.adaptive.outdoor_threshold;
+    const bool verified = r.ok() || r.filters.has_adaptive;
+    out.effective_cdf_percentile = verified ? r.adaptive.cdf_percentile : 0;
+    out.effective_outdoor_threshold = verified ? r.adaptive.outdoor_threshold : 0;
     out.result = result(r);
+    {
+      boost::recursive_mutex::scoped_lock lock(dynamic_mutex);
+      last_dynamic = dynamicSnapshot();
+      dynamic->updateConfig(last_dynamic);
+    }
     return true;
   });
   service<msg::GetPtpStatus>("get_ptp_status", [this](auto&, auto& out) {

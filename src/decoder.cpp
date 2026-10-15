@@ -32,7 +32,7 @@ struct Decoder::Impl {
     int64_t token;
   };
   std::optional<Recovery> recovery;
-  std::chrono::steady_clock::time_point last_progress;
+  std::optional<std::chrono::steady_clock::time_point> last_progress;
   Impl(decoding::Discovery discovery, decoding::Clock now)
       : discover(std::move(discovery)), clock(std::move(now)) {}
   void reset(bool preserve) {
@@ -40,6 +40,7 @@ struct Decoder::Impl {
     selected.reset();
     contexts.clear();
     recovery.reset();
+    last_progress.reset();
     waiting_keyframe = true;
     status.hardware_active = false;
     if (!preserve) {
@@ -80,7 +81,6 @@ struct Decoder::Impl {
         status.backend = choice.candidate.name;
         status.device = choice.candidate.device;
         status.hardware_active = false;  // Confirm only after an actual output frame.
-        last_progress = clock();
         if (choice.candidate.hardware)
           status.fallback_reason.clear();
         else if (status.failures.empty())
@@ -118,9 +118,15 @@ struct Decoder::Impl {
       status.hardware_active = choices.at(*selected).candidate.hardware;
       last_progress = clock();
     }
-    // EAGAIN/reorder delay alone is normal; only a sustained backlog is a stall.
-    if (backend->asynchronous() && contexts.size() >= 8 &&
-        clock() - last_progress > std::chrono::seconds(5))
+    if (contexts.empty())
+      last_progress.reset();
+    const bool independent_tail =
+        contexts.size() == 1 && recovery && recovery->token == contexts.begin()->first;
+    // Independent inputs must finish even without another packet. A short video
+    // tail containing dependent pictures can still be normal reorder delay.
+    if (backend->asynchronous() && last_progress && !contexts.empty() &&
+        (format == sdk::OdinDataFormat::kImageMjpeg || independent_tail || contexts.size() >= 8) &&
+        clock() - *last_progress >= std::chrono::seconds(5))
       throw decoding::Error(decoding::Failure::backend,
                             "hardware decoder made no progress for 5 s");
     return out;
@@ -244,6 +250,8 @@ std::vector<DecodedFrame> Decoder::submit(const sdk::OdinCameraPacket& p,
       if (state.contexts.size() >= 64)
         throw decoding::Error(decoding::Failure::backend, "decoder exceeded 64 pending frames");
       const auto token = ++state.next_token * 1000000;  // Survives V4L2 microsecond transport.
+      if (state.contexts.empty())
+        state.last_progress = state.clock();
       state.contexts[token] = context;
       state.backend->send(bytes, token);
       if (state.backend->asynchronous() && keyframe)

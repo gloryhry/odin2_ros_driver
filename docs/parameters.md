@@ -16,7 +16,7 @@
 | `slam_world` | `false` | SDK SLAM／LF Odom 同步；开启时 SLAM frame 强制为 `odom` |
 | `broadcast_tf` | `false` | TF 通道发布局部 `transforms`，另可广播到标准 `/tf` |
 | `sensor_mode` | 不设置 | `hdr`、`high_peak`、`low_peak`、`adaptive`；设置后在每次重连恢复 |
-| `filters` | 不设置 | 只修改显式选中项；范围见下表 |
+| `filters` | 不设置 | 仅支持adaptive参数；无配置时不写设备；范围见下表 |
 | `sync_lag` | `10` | SDK 同步容忍帧数，1～1000 |
 | `command_timeout_ms` | `1000` | 支持超时的 SDK 命令，1～60000 ms；不扩展 SDK 未提供的超时接口 |
 | `worker_threads` | `2` | 每设备转换／解码工作线程 1～32，另有一个控制线程 |
@@ -27,8 +27,8 @@
 
 | `filters` 子参数 | 类型／范围 | 单位／默认 |
 |---|---|---|
-| `confidence_threshold` | 0～255 整数 | SDK 强度置信门限，省略时不设置 |
-| `min_depth` | 0～65535 整数 | mm，省略时不设置 |
+| `confidence_threshold` | 不支持 | 当前固件无法运行时设置，出现此键则启动配置校验失败 |
+| `min_depth` | 不支持 | 当前固件无法运行时设置，出现此键则启动配置校验失败 |
 | `cdf_percentile` | 1～10000 整数 | 0.01%；同组只设置 outdoor 时默认 7000 |
 | `outdoor_threshold` | 0～65535 整数 | mm；同组只设置 percentile 时默认 3000 |
 
@@ -39,7 +39,7 @@ devices:
     device_ip: 192.168.1.10
     host_ip: 192.168.1.100
     sensor_mode: adaptive
-    filters: {confidence_threshold: 80, min_depth: 150}
+    filters: {cdf_percentile: 7000, outdoor_threshold: 3000}
     time_mode: mapped
     tf_prefix: front
     worker_threads: 2
@@ -81,7 +81,7 @@ devices:
 | `topic` | 非空相对 ROS topic | 不允许绝对路径；同设备主话题不能重复，支持 launch remap |
 | `frame_id` | 非空字符串，无空白 | 加设备 TF 前缀；TF 消息使用 SDK 自带父子名称 |
 | `transport` | `udp`／`tcp` | 遥测必须 TCP |
-| `publish_rate` | 有限非负数 | 以墙钟限制 ROS 发布 Hz；不改变采集频率；视频仍消费每帧以保持解码参考 |
+| `publish_rate` | 有限非负数 | 以墙钟限制ROS发布Hz；相机仅限制Image/CameraInfo与MJPEG CompressedImage，编码透传不受限制；视频仍解码每帧 |
 | `queue_size` | 1～1000000 | 待处理 SDK 包数量限制，不等于点数／字节数 |
 | `queue_bytes` | 1～1073741824 | 待处理包估计内存上限；超限丢旧包，单包超限丢该包；视频积压时清除待处理参考链，等待恢复帧 |
 
@@ -120,6 +120,8 @@ CameraInfo 仅接受标准 ROS YAML，`config/camera_info_example.yaml` 提供�
 
 ## 运行时动态配置
 
-每台设备 `/name/set_parameters` 为独立 dynamic_reconfigure server；可调九个 `*_enabled` 和九个 `*_publish_rate`（0～2000 Hz）。`apply_filters=true` 显式应用 confidence／range／adaptive 三组参数，完成后自动回到 false。通道调整通过受控重连完成；滤波通过查询、设置、读回与回滚完成。失败恢复先前配置，恢复失败将设备标为 retrying，停止旧数据输出。
+每台设备 `/name/set_parameters` 为独立 dynamic_reconfigure server；可调九个 `*_enabled` 和九个 `*_publish_rate`（0～2000 Hz）。`apply_adaptive=true` 显式应用cdf_percentile/outdoor_threshold，确认成功后复位为false。数字控件表示候选配置，实际值通过get_adaptive查询。旧apply_filters、confidence_threshold、min_depth控件已弃用；apply_filters=true或修改不支持字段会整批拒绝，包括同次请求中的通道变更。
+
+通道调整通过受控重连完成；adaptive单独更新不重连。adaptive先查询、设置、严格读回，失败恢复调用前实际值。无法确认恢复时保留独立恢复目标、进入retrying并停止旧数据输出；重连优先恢复该目标。正常重连恢复已接受配置，无配置则不主动写参数。YAML的filters空对象仍为无效配置。
 
 硬件探测、后端优先级、30 秒重试与容器设备传入见 [硬件解码](hardware-decoding.md)。

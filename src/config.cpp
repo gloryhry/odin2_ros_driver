@@ -193,7 +193,7 @@ std::vector<DeviceSettings> loadConfig(const ros::NodeHandle& node) {
       f.adaptive.cdf_percentile = integer(v, "cdf_percentile", 7000, 10000);
       f.adaptive.outdoor_threshold = integer(v, "outdoor_threshold", 3000, 65535);
       validateFilters(f);
-      cfg.initial_filters = f;
+      cfg.initial_adaptive = f.adaptive;
     }
     cfg.sync_lag = integer(x, "sync_lag", 10, 1000);
     cfg.command_timeout_ms = integer(x, "command_timeout_ms", 1000, 60000);
@@ -341,6 +341,10 @@ void validateStream(Channel c, const StreamSettings& s,
     throw std::invalid_argument("camera format/resolution/fps combination is not advertised");
 }
 void validateFilters(const sdk::OdinLidarFilterParams& f) {
+  if (f.has_confidence || f.has_range)
+    throw std::invalid_argument(
+        "UNSUPPORTED_FILTER: confidence_threshold/min_depth are not supported by firmware; "
+        "only adaptive parameters can be configured");
   if (!f.has_confidence && !f.has_adaptive && !f.has_range)
     throw std::invalid_argument("at least one filter must be selected");
   if (f.has_adaptive && (!f.adaptive.cdf_percentile || f.adaptive.cdf_percentile > 10000))

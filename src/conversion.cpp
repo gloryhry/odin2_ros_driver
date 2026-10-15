@@ -54,18 +54,26 @@ geometry_msgs::Quaternion quaternion(const float* q) {
 }
 }  // namespace
 sensor_msgs::PointCloud2 rawCloud(const sdk::OdinPointCloudPacket& p, const std_msgs::Header& h) {
-  auto out = cloud(h, p.points.size(), 20);
-  out.fields.push_back(field("intensity", 12, 7));
-  out.fields.push_back(field("confidence", 16, 2));
+  constexpr uint32_t kPointStep = 18;
+  constexpr size_t kPointsPerGroup = 256 * 6;
+  constexpr float kSubframeInterval = 1.0f / 328.5f;
+  auto out = cloud(h, p.points.size(), kPointStep);
+  out.fields.push_back(field("intensity", 12, sensor_msgs::PointField::UINT8));
+  out.fields.push_back(field("confidence", 13, sensor_msgs::PointField::UINT8));
+  out.fields.push_back(field("offset_time", 14, sensor_msgs::PointField::FLOAT32));
   for (size_t i = 0; i < p.points.size(); ++i) {
     const auto& v = p.points[i];
     const bool bad = invalid(v);
     const float nan = std::numeric_limits<float>::quiet_NaN();
-    put(out.data, i * 20, bad ? nan : v.x * 0.001f);
-    put(out.data, i * 20 + 4, bad ? nan : v.y * 0.001f);
-    put(out.data, i * 20 + 8, bad ? nan : v.z * 0.001f);
-    put(out.data, i * 20 + 12, static_cast<float>(v.intensity));
-    out.data[i * 20 + 16] = v.confidence;
+    const size_t at = i * kPointStep;
+    put(out.data, at, bad ? nan : v.x * 0.001f);
+    put(out.data, at + 4, bad ? nan : v.y * 0.001f);
+    put(out.data, at + 8, bad ? nan : v.z * 0.001f);
+    out.data[at + 12] = v.intensity;
+    out.data[at + 13] = v.confidence;
+    // Preserve invalid points so the rolling scan group follows the SDK index.
+    // This float is deliberately unaligned in the official 18-byte wire layout.
+    put(out.data, at + 14, (i / kPointsPerGroup) * kSubframeInterval);
   }
   return out;
 }

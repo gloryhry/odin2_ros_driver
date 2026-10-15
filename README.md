@@ -56,6 +56,8 @@ SDK 作为构建依赖编译，示例程序关闭，完整 `libodin_sdk.so*` 链
 
 ## 配置与接口
 
+现有部署升级时须同步检查订阅端：原始点云恢复官方 18 字节布局，`intensity` 改为 UINT8，并提供逐点 `offset_time`。滤波控制仅支持 adaptive，`confidence_threshold/min_depth` 配置会被拒绝；相机 `publish_rate` 仅限制图像输出，编码透传速率通过设备 FPS 控制。迁移步骤见 [升级兼容性](docs/deployment.md#升级兼容性)。
+
 配置示例：
 
 | 文件 | 用途 |

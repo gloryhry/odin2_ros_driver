@@ -1,0 +1,385 @@
+{
+  "date": "2026-10-15",
+  "timezone": "Asia/Singapore",
+  "scope": "Approved six review defects, startup test registration, regression coverage and upgrade documentation",
+  "baseline": {
+    "git_revision": "9c6ed8abdb712fe1678ec007765136e38cbfb72f",
+    "dirty_worktree_preserved": true,
+    "initial_file_count": 208,
+    "initial_hash_manifest": "/tmp/odin2-fix-baseline/hashes.json",
+    "initial_hash_manifest_sha256": "725362a2be81dfcd4b4126f40490bd457c327572af395c6fbbf19e87ab694802",
+    "initial_diff": "/tmp/odin2-fix-baseline/diff.patch",
+    "initial_status": [
+      " M .dockerignore",
+      " M .github/workflows/docker.yaml",
+      " M .github/workflows/jetson.yaml",
+      " M .gitignore",
+      " M CMakeLists.txt",
+      " M README.md",
+      " M docker/Dockerfile",
+      " M docker/Dockerfile.jetson",
+      " M docs/architecture.md",
+      " M docs/deployment.md",
+      " M docs/hardware-decoding-validation.json",
+      " M docs/hardware-decoding.md",
+      " M docs/validation-results.json",
+      " M docs/validation.md",
+      " M package.xml",
+      "?? docs/evidence/gpu-ros-validation.py",
+      "?? sdk_api/compile_commands.json",
+      "?? test/"
+    ]
+  },
+  "source": {
+    "algorithm": "sha256(sorted sha256 + two spaces + relative path + newline)",
+    "compiled_and_test_inputs": {
+      ".clang-format": "23897e4082f66892759e79d2a2b487315ac7ff0f5559659865b8a98c0f6ca538",
+      "CMakeLists.txt": "cfbd143f5beb5e1a6fbc87824910f2cb28ef6c5f67e47bcbf7624f516753da45",
+      "cfg/Device.cfg": "9d892caa252573fe597eda35a90fd4f32e930656467b1a7b8eb08b1b80fa711d",
+      "cmake/OdinSdkStreamCompat.cmake": "24a2690268580ede97aaec86bf4edd704d49b86a926c5af3884680742707f37d",
+      "config/all_channels.yaml": "d86001278d55a341bf4f45290a1eefd2e8f0a7087d0519be7642eb6ba6dac3ed",
+      "config/camera_info_example.yaml": "344ce53a29588ecfb390afddb37c1407408d8ab67e9ba2a6aa0c0198f23b989a",
+      "config/default.yaml": "8d336671ce7650863abc52b02b6cfd0d950a5fdc23e624b3aa8f5005a6f2f93a",
+      "config/multi_device.yaml": "5a22e7d932719315e13f14220203bb751fd9b49414c81c4b88b7cf5ca6465319",
+      "config/orin.yaml": "ab712d72af1f0c5122eb374373d03ca97f53959442a44c2620ad018900fd17c8",
+      "config/stereo.yaml": "d40f98fb14d009b1b22e9d4b47c42c54b71aea60f2fd44a7c4182f36b72620db",
+      "docker/Dockerfile": "f8d9625eaac9c154950285298aa7e5f54185c93c1426d703fbeb6de0198b1f79",
+      "docker/Dockerfile.jetson": "5efd0a556f0e4f22dc8b22307567b77438abaecab12ed793c603bbeca4125bd2",
+      "docker/compose.jetson.yaml": "334053121958fedef6057aa5f5bb87227e3ef6045d157cf716bbb9c4011c5095",
+      "docker/compose.nvidia.yaml": "16622df0a92b7c9dbf6a75d52c91bad1cd37c565c8f60b5017638e63f1277381",
+      "docker/compose.v4l2.yaml": "2596642d3ad0b87ffd0a45e6c768e7868fc3f94e97e967cd6d6ecc7f27d787c1",
+      "docker/compose.vaapi.yaml": "22509ef50b3351d2010dd8d5acd7cca655c6575c9b03ea0170ad1d6639a8d4c8",
+      "docker/compose.yaml": "84c645fb4d9a2d3fe68e62f9c04c8443b05305266c246709a7255441b684389c",
+      "docker/entrypoint.sh": "83ef50a2debcb0a4631d4b72e25e005f0b5fe6cd6ff851983a68947e0117ffd4",
+      "docker/jetson-entrypoint.sh": "70ec5d17bf635f7c7f926925b5d077c1630a7b547f348608956e6e9343d35154",
+      "include/odin2_ros_driver/conversion.hpp": "59477ee3688652750d16746ffb09a6b472a1d9338cdd32f9a3123ffb664e5b92",
+      "include/odin2_ros_driver/core.hpp": "f4c84237d3b65a144b71fbd5dd6f509b58bbb4619b9c68255d0eb3918f300350",
+      "include/odin2_ros_driver/decoder.hpp": "2e9a365b6c0b9f54b25a328189512b6c7572dfd517b92f1bc5ad6fa2d9abc1e3",
+      "include/odin2_ros_driver/decoder_backend.hpp": "6ccdb333e07bc7b7331aeac51f6ec2bd566fe0fb98e7d7e07fd45f178c4d5227",
+      "include/odin2_ros_driver/driver.hpp": "ac9e052e1ea9781b3b7f8ee6a12cba937a08aeb2306feac87ba313393657818b",
+      "include/odin2_ros_driver/sdk.hpp": "d9cf5139fcb0534b79d015c2db443b698cb7e1b5468db0a1a9a06c084b121931",
+      "launch/driver.launch": "c63ee9e858d67ba81f9b9160cb97dbfdd958226e988226e533fcb9bdec8ef5c2",
+      "launch/rviz.launch": "d84ac520150471019be232bd56e11ae3aff072b9e0aa30e6e33f681983a26e75",
+      "msg/ChannelStatus.msg": "c772420ce5eb65a240dc3d1cdbf9190ff34270c3893863cdd5b88c62b3407c57",
+      "msg/DeviceStatus.msg": "8f54a85ceb44236cad496ea6481a973af9d1538e4b680899e6f6360d77b3dc3e",
+      "msg/EncodedFrame.msg": "aedbbdeff22b9ba8a0547a79dbb50b76047f490ca3bb956ad15f78027137e68e",
+      "msg/FilterConfig.msg": "0a125b48d31ce4b501ee062ed97367050eee919f13e7cee25db53a9684952748",
+      "msg/NetworkConfig.msg": "b96266867a669967a921e81d453cd665e0a6287141649b3329f940fe7f89eaff",
+      "msg/OdomPacket.msg": "2a3a96cd8f4041c01b27a4ac1f4e79d7e2a22e728d49778a2e80476e22fe72f3",
+      "msg/OdomSample.msg": "0dfe8ce8dd6cebad9b5659189c064cd7175d551d0c4877a5f0055eb0d764e12a",
+      "msg/PtpStatus.msg": "19e347c60ab6c1adf9cbcfcd32649bc2087cb696b2074334bba08b158d4d83b3",
+      "msg/Result.msg": "dd534680820d517dd509d0a6adcadf168e526ed0013ea96e3f831b1bf70ed909",
+      "msg/SensorCapability.msg": "9e6e3e332e0c8baf1af30a1fc063bceca3b6c8312fa2ceb749c09e7996ecc7fd",
+      "msg/StreamConfig.msg": "dcfe72f9c2eec739028533600ff941b76b219ebe9ba356d4e8b81d06d7d07a29",
+      "msg/StreamMode.msg": "150f71e4894598e02983dda452957f590295b99fe2cdf3528016df128884f38b",
+      "msg/Telemetry.msg": "607f39ab2184959043d4a41335a58acd1031fd610694bc8540792ee800737308",
+      "msg/TransferStatus.msg": "574d8db4cf3bde760ef159e784d62a1ee42a2de31fbb4e528dba2cece2fef701",
+      "package.xml": "1242182044a94eaba56d0318abd6aa74cca1108664f9c0d83a6b28a8d7137450",
+      "src/config.cpp": "50572cc04c0edeb776d13b8f6359945772212e13585c032d1ea46b79717c23da",
+      "src/conversion.cpp": "bff975bd23bdc57024b0f105c2119a34d5371c442b1ea011b6980e4a3574902f",
+      "src/decoder.cpp": "e8865a5fc5ee056699beba417ba6291abe19416c2c9f24da84e2e1e50c0c417c",
+      "src/decoder_ffmpeg.cpp": "f1baf8ab1ba4c1acf8bd1daad31808d0885dfdc757a084079582ad06ddc636ca",
+      "src/decoder_jetson.cpp": "08e01263aaa352927ecfdf1cd9dc6180f52b2389c8220b648c11a76073441807",
+      "src/driver.cpp": "eb62fa54c9698f6a9f489943477c92302fcac33930b3d41c7ce59a00ac425f9c",
+      "src/main.cpp": "180c67325544af0660237ab1a3156ee7cae1a9c4d7f2118a0177c749d3eb1c3c",
+      "src/sdk.cpp": "96ae011812cf993d55750e8ea2d0eb1555fec50f9d9cab20a334924290e5c1c4",
+      "src/sdk_stream_compat.hpp": "5cb52a45e696d5dfe2da70194ccf0a4b7c29693c70d7fbc3a745e4e5423acf29",
+      "srv/DeviceCommand.srv": "3323d0a7fdd49ffc86f900cdb611b54c8076a947f5fc40eef1c896e8543c8805",
+      "srv/GetAdaptive.srv": "09bd60377db51cc58e772e691edd693a752b4388913c961693ddddd7bdb3a225",
+      "srv/GetChannelConfig.srv": "c11d977b7cd190b00b3ae65a4fe042f9e1b677d2c4da8af3b9720c4bf6e515aa",
+      "srv/GetDeviceInfo.srv": "703bda91f43ef96bbd76d56e6f78f5b85abba70db259b21595a30f5ba473c3b1",
+      "srv/GetFilters.srv": "1ddef0d21e10107a4bbe825ff1851f5308bc499a70b9c00dc9d2f9d0b4afd265",
+      "srv/GetMode.srv": "148d376d207add9ee6f5dd45505ce7152a78f435a066a5f7ec8a8365808211fb",
+      "srv/GetNetwork.srv": "b1957e2395cbc21112159fb6a470387c0488916460370858f65c9b29d34e940f",
+      "srv/GetPtpStatus.srv": "a8b4d2c0eb41303cec0423bffe31dc60e04a89c4cb23ea4af61b38fffe453fa9",
+      "srv/GetTransferStatus.srv": "9cb5047494f59769083814866a208ffd93dfa7729ae55e732b9af15e49d97cf8",
+      "srv/SendAlgoData.srv": "5a61cb3d69ac1c8789b43511e4cd616d5e6be85a9b96dfd7f2c11dc3bf7f8efc",
+      "srv/SetAdaptive.srv": "974e6536a459fac8e99664a5417a563cd8cd135c0f17443fcb95967752575e11",
+      "srv/SetFilters.srv": "0eb44ead9f139d2c5d6eeb12cab7c290e98768138a88bab9a3f926624db857a7",
+      "srv/SetMode.srv": "cdb9ee6ea2983cd30c686e3b7db2fc3cdc418a3e413edf9905a23c53e87a87f3",
+      "srv/SetNetwork.srv": "30db34993f2087c621b619994ae92a6d7ea4858d4b09fbef3b8b3c37d1afd746",
+      "srv/SetStream.srv": "6688d7197f4993b1f99f263412fc32c497b9ffb34d1803f9c8749512028d6a6e",
+      "srv/StartFileTransfer.srv": "40933a2330d227e11929e55d2e05020cdacebfa499265fc7360abcfce36668e7",
+      "test/async.test": "24ba34daedd38431260f5976b050eb8714dafc999c4f9b06da1b6ec4fa24a8fd",
+      "test/async_integration.py": "dd0b3ef4b49afaacaea7ab967f235b7fd08f45ec25b9a5cbf883b3c130bcd926",
+      "test/cloud_pcl_tests.cpp": "dd330a770aa6756f3f99747e2895a93a9092342aa88e0274f352e085f4db8ae2",
+      "test/control.test": "d31dd09e8db8cec34ef7d375d0908d5f0f2dd41d36a8320e66135d45e0d483f4",
+      "test/control_tests.cpp": "4c89c77a94d7c305463919d270fd5cf9f6fe4a6641fe80bcce79fabbf3f64ea5",
+      "test/decoder_tests.cpp": "18ca97633040564979b4b8e6df58ca8dacf81d37778e703d18a23c8a7ac6d702",
+      "test/driver_tests.cpp": "8284f2bf59998ffba52db3351f91cf5e62d257e7d5bd16006b72dcbca78bd627",
+      "test/integration.py": "ae32d2b9ef52540cc5c10cc73925564940eb4797de0548fca079e2b5a7bac7d0",
+      "test/integration.test": "535f5fc065a0ce5562e0a4d34009b2407e2702bba58ab6970183152ba7a80db1",
+      "test/mock_main.cpp": "5cb023edff6e328df9615273950409923e1d5dbb3c9867b012e9d6b0dd927c79",
+      "test/mock_sdk.cpp": "2f6f28bf2d7a695df9381ca45c318b4ff92ea6463b51f69ec3036f7a1ea3f536",
+      "test/mock_sdk.hpp": "b731e2269c33888a4d3c692a63064e96e2f03dd650983c706914f02351de89ee",
+      "test/runtime.test": "fe1ffb1d0e33023a5c853c6bca34ff9c4c2a19634e23fb3db659983377236d9b",
+      "test/runtime_smoke.py": "29ba450c888e0d309137a2cd104545bea66e068fbd77fc6f4256b705c05354a7",
+      "test/runtime_tests.cpp": "7cd98098a634c5d9fbed7c3eb0a477dd730f055fffb4c53ea925524548e6542c",
+      "test/sdk_stream_tests.cpp": "cb7dae8ee161435d78ca489e932b9573782bc72ebae6727a89831d59653df437",
+      "test/startup_query.py": "11a54c2b2ff84cb44363d7a38eaf869d8de11aa7288359a9bbf9e8087808539c",
+      "test/startup_query.test": "88124574efdb2f5b262cea31ed1308c2b9dd92594fca94eb929492cbc279d18d"
+    },
+    "source_fingerprint": "27fe6c555fc30bbf9cf3e590107f53948046d2a69af1b245254571e859ea1f69",
+    "snapshot_scope": "Full local test-enabled validation workspace; see delivery_scope"
+  },
+  "preservation": {
+    "sdk_original_file_count": 106,
+    "sdk_original_bytes_unchanged": true,
+    "msg_files": 14,
+    "msg_bytes_unchanged": true,
+    "srv_files": 16,
+    "srv_bytes_unchanged": true,
+    "missing_baseline_files": [],
+    "preexisting_unrelated_bytes_unchanged": {
+      ".dockerignore": true,
+      ".gitignore": true,
+      ".github/workflows/docker.yaml": true,
+      ".github/workflows/jetson.yaml": true,
+      "docs/validation-results.json": true,
+      "docs/hardware-decoding-validation.json": true,
+      "docs/evidence/gpu-ros-validation.py": true,
+      "sdk_api/compile_commands.json": true
+    }
+  },
+  "regressions": [
+    {
+      "area": "official raw cloud",
+      "red": "2 raw conversion regressions and 1 real PCL mapping test failed with pre-fix conversion",
+      "red_logs": [
+        "/tmp/odin2-cloud-red-tests.log",
+        "/tmp/odin2-cloud-pcl-red-tests.log"
+      ],
+      "green": "Exact schema, literal time samples, invalid-point positions and x-nav-compatible registered PCL point fields passed"
+    },
+    {
+      "area": "adaptive controls",
+      "red": "Original 8 control regressions failed; two added mixed-batch baseline/pre-read regressions also failed before their follow-up fix",
+      "red_logs": [
+        "/tmp/odin2-filter-fix-evidence/red.log",
+        "/tmp/odin2-filter-fix-evidence/mixed-red.log"
+      ],
+      "green": "15 control cases, real SDK dedicated-command loopback, and multi-device ROS integration passed"
+    },
+    {
+      "area": "encoded continuity and clock admission",
+      "red": "4 of the original 5 runtime regressions failed with pre-fix driver",
+      "red_logs": [
+        "/tmp/odin2-runtime-red.log"
+      ],
+      "green": "8 final runtime cases passed including H264/H265 sequence byte equality and downstream continuous decoding at image publish_rate=1, MJPEG rate/counting, restart and generation fencing"
+    },
+    {
+      "area": "independent asynchronous tail recovery",
+      "red": "10 regressions fail with HEAD decoder.cpp: MJPEG pending 1-7, first input after idle, H264/H265 single keyframe",
+      "red_logs": [
+        "/tmp/odin2-decoder-red.log"
+      ],
+      "green_log": "/tmp/odin2-decoder-green.log",
+      "green": "Fixed decoder full driver_tests: 47 passed, 1 real hardware test skipped; dependent tails, 30-second cooldown, original contexts and 64-pending bound covered"
+    }
+  ],
+  "matrix": {
+    "amd64": {
+      "status": "passed",
+      "execution": "native x86_64",
+      "dockerfile": "docker/Dockerfile",
+      "compiler": "GCC 9.4.0 / Ubuntu 20.04 / ROS Noetic",
+      "build_command": "BUILDX_CONFIG=/tmp/odin2-buildx docker buildx build --builder default --platform linux/amd64 -f docker/Dockerfile --target runtime --build-arg BUILD_JOBS=4 --progress plain --output type=cacheonly .",
+      "build_log": "/tmp/odin2-fix-amd64-final-build.log",
+      "catkin_summary": "158 tests, 0 errors, 0 failures, 0 skipped",
+      "test_cases": {
+        "driver_tests": {
+          "total": 48,
+          "passed": 47,
+          "skipped": 1
+        },
+        "cloud_pcl_tests": {
+          "total": 1,
+          "passed": 1
+        },
+        "sdk_stream_tests": {
+          "total": 3,
+          "passed": 3
+        },
+        "control_tests": {
+          "total": 15,
+          "passed": 15
+        },
+        "runtime_tests": {
+          "total": 8,
+          "passed": 8
+        },
+        "integration": {
+          "total": 1,
+          "passed": 1
+        },
+        "async": {
+          "total": 1,
+          "passed": 1
+        },
+        "startup_query": {
+          "total": 1,
+          "passed": 1
+        }
+      },
+      "independent_total": 78,
+      "independent_passed": 77,
+      "hardware_tests_skipped": 1,
+      "install": "passed",
+      "ldd": "passed",
+      "installed_runtime_smoke": "passed",
+      "catkin_xml": {
+        "path": "/tmp/odin2-fix-results-amd64",
+        "files": {
+          "odin2_ros_driver/gtest-cloud_pcl_tests.xml": "3a0e03110fbc5576d9566cebc46e58b66a023e01df42dd531507b6df9bf194d1",
+          "odin2_ros_driver/gtest-driver_tests.xml": "8a92436b712670195b3debc8a641067ecf9ea1f6f6b51ced47df02be85b3b7b4",
+          "odin2_ros_driver/gtest-sdk_stream_tests.xml": "2cbd6086a8b49b7b7fbbcc65b36e4fc605d700a1ef576cfd7bdeae99cb768711",
+          "odin2_ros_driver/rostest-test_async.xml": "296be9df1fe518d92f3e4cd87ca91cbd024ae97e77481a3512fd506a18d367bf",
+          "odin2_ros_driver/rostest-test_control.xml": "41b7bdb36ec56cbc2f88be52e593bd764cf7f9a4bd25b59b29ae34c2042ab53d",
+          "odin2_ros_driver/rostest-test_integration.xml": "133541cfbfbb0dd97702c95c175cb552c2cb315c5153fbf4e62fdf0be253db44",
+          "odin2_ros_driver/rostest-test_runtime.xml": "b1d7efbc7023f88be928367d4fde060374371dc5ae4ea9045c0557a4b67974e2",
+          "odin2_ros_driver/rostest-test_startup_query.xml": "731b59c156e896704064c7847c764cfce49dad675878c567e7115c83e6e8896a",
+          "odin2_ros_driver/rosunit-async_decoder.xml": "f42c61e4e406f2387442384656403aff7246763094d20221a3d4edbec3ec3281",
+          "odin2_ros_driver/rosunit-control_transactions.xml": "98f31af6129b762f90d4e7f8be3c24b5dadbbe104e7a141681f45e1dd7e4ecbf",
+          "odin2_ros_driver/rosunit-integration.xml": "0af2c7f648eee58f420a0d176c38aa4d24c0cf1638a17eecea61ba8c34c2e151",
+          "odin2_ros_driver/rosunit-runtime_regressions.xml": "8ea904b71fe69ca293f126bd4438f41670f43f0ba838db9e5d9b70810db82909",
+          "odin2_ros_driver/rosunit-startup_query.xml": "6bc1dec3d26ce6d8f0e199d83eaeeb3ae9ebb6a89974685a89cca415aa045698"
+        }
+      },
+      "output": "BuildKit cache only; no image tag overwritten or image pushed",
+      "build_log_sha256": "b5a9de01fa376ff577e404a1fa9f02760daf7350d79e77ed5813a3c8e4ebdfc4",
+      "results_export_log": "/tmp/odin2-fix-amd64-results-export.log",
+      "results_export_log_sha256": "c688e6341b2d5d1d7e001728ef1f01e7f4c7ea7e894040d262a02bcc34b39424"
+    },
+    "arm64": {
+      "status": "passed",
+      "execution": "BuildKit bundled QEMU aarch64; no native ARM hardware",
+      "dockerfile": "docker/Dockerfile",
+      "compiler": "GCC 9.4.0 / Ubuntu 20.04 / ROS Noetic",
+      "build_command": "BUILDX_CONFIG=/tmp/odin2-buildx docker buildx build --builder base-arm-builder --platform linux/arm64 --build-context rosbase=oci-layout:///tmp/odin2-fix-arm-base --build-arg BASE_IMAGE=rosbase --build-arg BUILD_JOBS=4 -f docker/Dockerfile --target runtime --progress plain --output type=cacheonly .",
+      "build_log": "/tmp/odin2-fix-arm64-final-build.log",
+      "catkin_summary": "158 tests, 0 errors, 0 failures, 0 skipped",
+      "test_cases": {
+        "driver_tests": {
+          "total": 48,
+          "passed": 47,
+          "skipped": 1
+        },
+        "cloud_pcl_tests": {
+          "total": 1,
+          "passed": 1
+        },
+        "sdk_stream_tests": {
+          "total": 3,
+          "passed": 3
+        },
+        "control_tests": {
+          "total": 15,
+          "passed": 15
+        },
+        "runtime_tests": {
+          "total": 8,
+          "passed": 8
+        },
+        "integration": {
+          "total": 1,
+          "passed": 1
+        },
+        "async": {
+          "total": 1,
+          "passed": 1
+        },
+        "startup_query": {
+          "total": 1,
+          "passed": 1
+        }
+      },
+      "independent_total": 78,
+      "independent_passed": 77,
+      "hardware_tests_skipped": 1,
+      "install": "passed",
+      "ldd": "passed",
+      "installed_runtime_smoke": "passed",
+      "catkin_xml": {
+        "path": "/tmp/odin2-fix-results-arm64",
+        "files": {
+          "odin2_ros_driver/gtest-cloud_pcl_tests.xml": "9d507828feef34a89ee0c871c8c4764502b062f89b13a0e7961316f43ef46ed5",
+          "odin2_ros_driver/gtest-driver_tests.xml": "a119870ace2f366cc9befb24ee5d14effeeb7195624e2913032822dbaca99ad3",
+          "odin2_ros_driver/gtest-sdk_stream_tests.xml": "3bc97e8e02f4a87d30c1a183ba994f79ef700703dcffcda2a02677a2e2be6d9f",
+          "odin2_ros_driver/rostest-test_async.xml": "3d3ab94f1926eaf5930b2f723671610ae757e11fe905d630476c776c34a53935",
+          "odin2_ros_driver/rostest-test_control.xml": "96484ac04b2f20970b79fe63d32744c28cad2766e0f4955fd7563bf1b3c4e91e",
+          "odin2_ros_driver/rostest-test_integration.xml": "e4c47d4abf4d463f1eece0a1f5e736408e730d3140400379551c46f3c76eb878",
+          "odin2_ros_driver/rostest-test_runtime.xml": "ce587ce19878f5a00126423b20d1bbb1e6c868c22c41da1ca6a6be222a71393e",
+          "odin2_ros_driver/rostest-test_startup_query.xml": "8bf40fda494593b023ea126e5ce97c7c65668991589cb35ddfc54ffd888ac6f1",
+          "odin2_ros_driver/rosunit-async_decoder.xml": "257f4a44cdca421aa433e3a1f957c4993fa2b47f43e44952f27c23243effe77f",
+          "odin2_ros_driver/rosunit-control_transactions.xml": "f7a7b0cbc05f2b7600f2719e97d15baf948f8d96370ca7d794b6838f48d2e2c9",
+          "odin2_ros_driver/rosunit-integration.xml": "c7c4e1a605ec093f1925a443e0a8b5590e7736825d53d213f0ec39c01f195874",
+          "odin2_ros_driver/rosunit-runtime_regressions.xml": "e4976490d03dc7d145c901ef4db49b6ad84c3e1986e453be14b4764e70950d97",
+          "odin2_ros_driver/rosunit-startup_query.xml": "142d87f18e6d9e1b5b209671ff002768e6720e97c0f4a0e523db75b353a59239"
+        }
+      },
+      "output": "BuildKit cache only; no image tag overwritten or image pushed",
+      "build_log_sha256": "bb9c8ea37d7957ea4304f1e27103f64d5d4170a5379e04806d67f00615a4b29b",
+      "results_export_log": "/tmp/odin2-fix-arm64-results-export.log",
+      "results_export_log_sha256": "abe3af5b37da27215df3af88586dc78c63ffb9ed366c3413901eba9068041010"
+    }
+  },
+  "shared_validation": {
+    "current_source_recompiled": true,
+    "catkin_results": "/tmp/odin2-fix-final-evidence/shared/final-results.log",
+    "test_log": "/tmp/odin2-fix-final-evidence/shared/final-tests.log",
+    "direct_unit_log": "/tmp/odin2-fix-final-evidence/shared/final-unit-direct.log",
+    "installed_smoke_log": "/tmp/odin2-fix-final-evidence/shared/final-smoke.log"
+  },
+  "counting_note": "Catkin double-counts gtest suite totals and testcase entries. This toolchain does not expose GTEST_SKIP in catkin_test_results summary. Direct executable output confirms 78 independent cases: 77 passed, 1 explicitly skipped hardware test.",
+  "static_checks": {
+    "clang_format": "18.1.8 passed for modified C++ production/test files",
+    "python_cfg_xml": "Python/cfg AST and package/launch/rostest XML parsing passed",
+    "git_diff_check": "passed",
+    "yaml_and_compose": "6 config YAML files parsed and docker compose config --quiet passed",
+    "sdk_build_artifacts": "No ELF, .so, .a or .o found in sdk_api; preexisting compile_commands.json unchanged"
+  },
+  "build_environment": {
+    "amd64_base": "ros:noetic-ros-base",
+    "arm64_base_oci_manifest": "sha256:c84e573d2f2beb679ea5b03015eb2876e9962657c23d0073e4ae9d7ba41c4700",
+    "buildx_configuration": "/tmp/odin2-buildx used because default activity directory is read-only",
+    "cache_cleanup": "User-authorized unused >24h build cache only; no user images, containers, volumes or project files deleted",
+    "earlier_amd64_attempt": "Older test context used Header.seq assertions, which ROS rewrites. Corrected assertions use point payload markers, EncodedFrame.frame_count and stamps; final current-source build passes."
+  },
+  "hardware_acceptance": [
+    {
+      "target": "Odin2 adaptive",
+      "status": "pending",
+      "reason": "No physical sensor connected",
+      "required": "Record firmware/mode and actual pre-call values; verify both parameters after writes, rollback and reconnect"
+    },
+    {
+      "target": "Jetson hardware decoding",
+      "status": "pending",
+      "reason": "No Jetson hardware available",
+      "required": "Record JetPack/L4T and actual hardware backend; verify stereo output, timeout and cooldown under load"
+    },
+    {
+      "target": "x-nav live cloud and per-point deskew",
+      "status": "pending",
+      "reason": "No live Odin2/x-nav motion dataset used",
+      "required": "Verify field registration, frame time and per-point offset with actual subscription and motion deskew; PCL unit result is not field acceptance"
+    }
+  ],
+  "git_commit": "not performed at validation time; subsequent production commit identified by Git history",
+  "push_or_publish": "not performed at validation time; this field records validation provenance, not later GitHub delivery status",
+  "jetson_dockerfile_matrix": "Updated test dependencies/fixtures; no L4T build or hardware acceptance claimed",
+  "delivery_scope": {
+    "included": "Production driver changes, dynamic configuration, interfaces, deployment documentation and this validation record",
+    "excluded_and_preserved_locally": [
+      "test/",
+      "test registration in CMakeLists.txt",
+      "test dependencies in package.xml",
+      "Docker and CI test execution changes",
+      "preexisting unrelated worktree changes",
+      "SDK build artifacts"
+    ],
+    "validation_snapshot": "Full local test-enabled workspace. The 85-file source fingerprint includes excluded test/build inputs and does not describe the production-only commit tree. Changed production C++/header/cfg files match the validated snapshot byte-for-byte.",
+    "committed_docker_ci": "Production builds and dynamic-library checks only; test and installed-runtime-smoke scripts remain local"
+  }
+}

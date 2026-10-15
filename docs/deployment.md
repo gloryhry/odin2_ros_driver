@@ -11,6 +11,14 @@
 
 同架构发布镜像不启用 `-march=native`、fast-math 或 Orin 专有指令。Release 允许编译器基础自动向量化；可选 LTO。CPU 亲和性只影响驱动工作／控制线程。Orin 默认配置提供较小点云队列和编码透传选项；开启两路视频解码前，先按能力表选择合适分辨率／fps，再测量 CPU 和丢帧。
 
+## 升级兼容性
+
+升级保留现有 topic 和 `.msg/.srv` 定义，但需同步检查以下配置与订阅端：
+
+- 原始 PointCloud2 恢复官方 18 字节布局：`x/y/z` 为 FLOAT32（偏移 0/4/8），`intensity/confidence` 为 UINT8（偏移 12/13），`offset_time` 为 FLOAT32 秒（偏移 14），`row_step=width×18`。将订阅端旧 FLOAT32 intensity 注册及固定 20 字节解析改为新布局；PCL 使用字段映射读取。逐点时间按原始索引每 1536 点递增 `1/328.5` 秒，无效点保留索引，坐标为 NaN。
+- 滤波控制仅支持 adaptive。移除 YAML 中的 `confidence_threshold/min_depth`，否则配置校验失败；含 confidence/range 的服务请求整单拒绝，`set_filters` 仅接受 adaptive-only 请求。动态配置改用 `apply_adaptive`，旧 `apply_filters` 被拒绝。驱动不添加主机端滤波，参数详见 [参数说明](parameters.md)。
+- 相机 `publish_rate` 限制解码图像及 MJPEG CompressedImage，EncodedFrame 透传不按此值丢包。需要降低编码流带宽时调整设备采集 FPS，并确认新模式受能力表支持；升级前按设备 FPS 重新评估网络及订阅端负载。
+
 ## Docker 和 Compose
 
 ```bash

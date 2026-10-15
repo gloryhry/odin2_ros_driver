@@ -6,7 +6,7 @@
 
 | 默认相对路径 | ROS 类型 | 字段与语义 |
 |---|---|---|
-| `points_raw` | sensor_msgs/PointCloud2 | x/y/z/intensity FLOAT32，confidence UINT8；offset 0/4/8/12/16，point_step=20，末尾3字节 padding |
+| `points_raw` | sensor_msgs/PointCloud2 | 官方布局：x/y/z FLOAT32 offset=0/4/8，intensity/confidence UINT8 offset=12/13，offset_time FLOAT32 offset=14（秒），point_step=18 |
 | `points_slam` | sensor_msgs/PointCloud2 | x/y/z FLOAT32，rgba UINT32 offset=12，point_step=16；RGBA 值为 AARRGGBB |
 | `camera{0,1}/image_raw` | sensor_msgs/Image | bgr8、连续行，step=width×3；header 对应解码帧 |
 | `camera{0,1}/encoded` | EncodedFrame | device_timestamp_ns、frame_count、format、width、height、is_keyframe、data；format 1/2/4/8 = NV12/MJPEG/H264/H265 |
@@ -20,7 +20,9 @@
 | `status` | DeviceStatus | name/state/SN/IP/last_error/reconnects/clock_resets、covariance 配置标记、PTP 可用标记及状态、逐通道统计 |
 | `file_transfer/status` | TransferStatus | job_id、QUEUED/RUNNING/SUCCEEDED/FAILED、progress（0～100）、Result |
 
-EncodedFrame 的 width/height 是 SDK 回调值，未指定自动模式时编码帧可能是 0；解码 Image 始终使用码流解析尺寸。is_keyframe 重新扫描实际 IDR/HEVC 随机接入 NAL，单独的 SPS 不视为恢复帧。所有自定义消息以具名字段承载数据；枚举常量可从生成的 ROS 类型读取。
+原始点云的 offset_time 相对帧时间，按原始点索引每1536点一组、组间隔1/328.5秒计算。无效点保留位置并写NaN，不改变后续点的扫描时间。原有按20字节步长或FLOAT32 intensity读取的订阅端须迁移到上述官方布局；现有topic和header时间映射策略保持一致。
+
+EncodedFrame 的 width/height 是 SDK 回调值，未指定自动模式时编码帧可能是 0；解码 Image 始终使用码流解析尺寸。is_keyframe 重新扫描实际 IDR/HEVC 随机接入 NAL，单独的 SPS 不视为恢复帧。所有自定义消息以具名字段承载数据；枚举常量可从生成的 ROS 类型读取。编码透传不受publish_rate限制，参数集及参考帧均按接纳顺序发布；设备采集fps决定编码流速率，队列溢出或网络丢包仍可能造成缺帧。
 
 `ChannelStatus` 区分 received、published（发布过输出的 SDK 包数）、decoded_frames（硬件或 CPU 解码完成帧数）、sequence_gaps（SDK 帧号缺口）、queue_drops、decode_errors、invalid_packets、out_of_order、queue_depth、queue_bytes、last_receive_age 和 last_publish_latency_ms。`reconnects` 记录成功建立连接的次数，包含首次连接。重复／倒序帧计入 out_of_order。last_receive_age=-1 表示本连接还没收到数据。SDK 没有暴露完整网络丢包统计，sequence_gaps 不等于所有 UDP 丢包。
 
@@ -36,7 +38,7 @@ EncodedFrame 的 width/height 是 SDK 回调值，未指定自动模式时编码
 | `get_device_mode`、`set_device_mode` | GetMode／SetMode | 0 standby、1 normal、2 upgrade；设置后读回，失败回滚 |
 | `get_sensor_mode`、`set_sensor_mode` | GetMode／SetMode | 0 HDR、1 high_peak、2 low_peak、3 adaptive |
 | `get_sync_mode`、`set_sync_mode` | GetMode／SetMode | 0 systick、1 PTP；设置为持久化默认值，需要重启设备生效 |
-| `get_filters`、`set_filters` | GetFilters／SetFilters | FilterConfig 的 has_* 选择要修改的组，返回有效值；SDK 部分修改失败时恢复旧值 |
+| `get_filters`、`set_filters` | GetFilters／SetFilters | adaptive兼容包装，仅支持has_adaptive；查询成功仅该标志为true；包含confidence/range的设置整单拒绝 |
 | `get_adaptive`、`set_adaptive` | GetAdaptive／SetAdaptive | cdf_percentile、outdoor_threshold；单位同参数表 |
 | `get_ptp_status` | GetPtpStatus | sync_state、servo_state、offset_ns、path_delay_ns、freq_ppb |
 | `get_network`、`set_network` | GetNetwork／SetNetwork | NetworkConfig 的 ip_address/gateway/netmask/mac/dhcp/ptp；成功设置后提示 reboot_required |
@@ -61,7 +63,7 @@ rosservice call /odin2/set_sensor_mode '{mode: 3}'
 rosservice call /odin2/set_device_mode '{mode: 0}'
 rosservice call /odin2/set_device_mode '{mode: 1}'
 rosservice call /odin2/get_filters '{}'
-rosservice call /odin2/set_filters '{filters: {has_confidence: true, confidence_threshold: 80, has_adaptive: false, has_range: true, min_depth: 150}}'
+rosservice call /odin2/set_filters '{filters: {has_adaptive: true, cdf_percentile: 7000, outdoor_threshold: 3000}}'
 rosservice call /odin2/set_adaptive '{cdf_percentile: 7000, outdoor_threshold: 3000}'
 rosservice call /odin2/get_ptp_status '{}'
 rosservice call /odin2/set_sync_mode '{mode: 1}'
@@ -70,7 +72,11 @@ rosservice call /odin2/reboot '{}'
 rosservice call /odin2/send_algo_data '{data: [1, 2, 3]}'
 ```
 
-通道启停／相机模式／限频通过同一个配置控制流程调整，并同步 dynamic_reconfigure。调整时会重连，短时中断所有该设备通道。发布限频使用墙钟，不改变设备采样。滤波／模式命令先查询、执行、读回，失败恢复，恢复失败时设备未就绪。单设备文件任务独占控制通道，其他管理服务返回 busy；数据转换继续运行。
+通道启停／相机模式／限频通过同一个配置控制流程调整，并同步 dynamic_reconfigure。调整时会重连，短时中断所有该设备通道。发布限频使用墙钟，不改变设备采样；相机仅限制解码Image/CameraInfo及MJPEG CompressedImage，EncodedFrame不受此限制。
+
+当前SDK的聚合滤波0x32/0x33仅返回成功ACK或空值，驱动业务路径不使用它们。confidence/range请求返回INVALID_ARGUMENT和UNSUPPORTED_FILTER消息；混合请求不会部分生效。adaptive使用专用0x34/0x35，先读取实际旧值、写入、严格读回确认，失败后写回并验证旧值。无法确认恢复时断开重试，优先恢复调用前实际值，即使此前没有配置adaptive也如此。配置快照表示已接受的期望值；服务effective仅在成功或已确认恢复时有效，恢复未知时必须检查失败Result，不可使用默认数值推断设备当前值。其他传感器模式下参数保存但不参与adaptive算法，驱动不自动切换模式。
+
+单设备文件任务独占控制通道，其他管理服务返回busy；数据转换继续运行。
 
 ### 网络变更
 
