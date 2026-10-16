@@ -5,15 +5,81 @@
 #include <unistd.h>
 
 #include <atomic>
+#include <chrono>
 #include <cstring>
 #include <stdexcept>
 #include <thread>
 
 #include "OdinProtocol.hpp"
+#include "odin_command_channel.h"
 #include "odin2_ros_driver/sdk.hpp"
 
 namespace {
 using namespace odin_driver;
+
+// Deliver a complete ACK inside Send(), before it returns to the caller.
+// This forces the same ordering as a fast TCP reply without scheduler delays.
+class ImmediateReplyTransport final : public sdk::ITransport {
+ public:
+  int send_result = 0;
+  std::chrono::milliseconds send_delay{0};
+  bool Open(const sdk::ITransportAddress&) override { return true; }
+  void SetRemoteTarget(const sdk::ITransportAddress&) override {}
+  void Close() override {}
+  bool IsOpen() const override { return true; }
+  void SetReceiveCallback(sdk::TransportReceiveCallback callback) override {
+    callback_ = std::move(callback);
+  }
+  bool StartReceiving() override { return true; }
+  void StopReceiving() override {}
+  const char* GetTransportName() const override { return "immediate-test-reply"; }
+  int Send(const uint8_t* data, size_t size) override {
+    std::this_thread::sleep_for(send_delay);
+    if (send_result < 0)
+      return send_result == -1 ? -1 : static_cast<int>(size) - 1;
+    sdk::OdinProtocolV1 protocol;
+    std::unique_ptr<sdk::IPacket> request;
+    if (protocol.Parse(data, size, request) <= 0 || !request)
+      return -1;
+    const uint8_t payload[]{0, 0x23, 0x45, 0xAB, 0xCD};
+    sdk::OdinPacket ack(request->GetCommandId(), request->GetSequence(), 1, 1,
+                        payload, sizeof(payload));
+    std::vector<uint8_t> output;
+    protocol.Pack(ack, output);
+    callback_(output.data(), output.size(), sdk::NetworkAddress("127.0.0.1", 60001));
+    return static_cast<int>(size);
+  }
+
+ private:
+  sdk::TransportReceiveCallback callback_;
+};
+
+TEST(SdkCommand, ReplyBeforeSendReturnsCompletesRequest) {
+  sdk::CommandChannel channel(std::make_unique<sdk::OdinProtocolV1>(),
+                              std::make_unique<ImmediateReplyTransport>());
+  ASSERT_TRUE(channel.Start({}));
+  sdk::OdinCommandSyncResponse response;
+  ASSERT_TRUE(channel.SendSync(0x35, {}, response, 1000));
+  EXPECT_EQ(response.result, sdk::OdinResult::kOk);
+  EXPECT_EQ(response.response.payload, (std::vector<uint8_t>{0, 0x23, 0x45, 0xAB, 0xCD}));
+}
+
+TEST(SdkCommand, FailedOrPartialSendDoesNotLeavePendingCallback) {
+  for (int failure : {-1, -2}) {
+    auto transport = std::make_unique<ImmediateReplyTransport>();
+    transport->send_result = failure;
+    transport->send_delay = std::chrono::milliseconds(250);
+    sdk::CommandChannel channel(std::make_unique<sdk::OdinProtocolV1>(), std::move(transport));
+    ASSERT_TRUE(channel.Start({}));
+    unsigned callbacks = 0;
+    auto callback = [](sdk::OdinResult, const sdk::OdinCommandResponse*, void* user) {
+      ++*static_cast<unsigned*>(user);
+    };
+    EXPECT_FALSE(channel.SendAsync(0x35, {}, callback, &callbacks, 100));
+    channel.Stop();
+    EXPECT_EQ(callbacks, 0u);
+  }
+}
 
 int listener(uint16_t port) {
   int fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -39,6 +105,7 @@ class Firmware {
   std::atomic<unsigned> camera_connections{0};
   std::atomic<unsigned> adaptive_sets{0}, adaptive_gets{0}, aggregate_commands{0};
   std::atomic<uint16_t> cdf_percentile{7000}, outdoor_threshold{3000};
+  std::atomic<uint16_t> suppress_reply{0xFFFF};
   Firmware() : command_(listener(60001)), heartbeat_(listener(60002)) {
     command_thread_ = std::thread([this] { serve(command_); });
     heartbeat_thread_ = std::thread([this] { serve(heartbeat_); });
@@ -104,6 +171,10 @@ class Firmware {
           }
           if (request->GetCommandId() == 0x32 || request->GetCommandId() == 0x33)
             ++aggregate_commands;
+          if (request->GetCommandId() == suppress_reply) {
+            suppress_reply = 0xFFFF;
+            continue;
+          }
           sdk::OdinPacket ack(request->GetCommandId(), request->GetSequence(), 1, 1, reply.data(),
                               reply.size());
           std::vector<uint8_t> output;
@@ -218,6 +289,26 @@ TEST(SdkStream, DedicatedAdaptiveCommandsRoundTripBigEndianParameters) {
   EXPECT_EQ(reply.adaptive.outdoor_threshold, 0xABCDu);
   EXPECT_EQ(firmware.adaptive_gets, 1u);
   EXPECT_EQ(firmware.aggregate_commands, 0u);
+  sdk->disconnect(handle);
+}
+
+TEST(SdkStream, CommandTimeoutPreservesResultForAdaptiveAndStreamCommands) {
+  Firmware firmware;
+  auto sdk = makeLiveSdk();
+  auto handle = sdk->connect(descriptor());
+  ASSERT_NE(handle, 0u);
+  Command command;
+  command.timeout_ms = 500;
+  for (auto kind : {CommandKind::SetAdaptive, CommandKind::GetAdaptive}) {
+    command.kind = kind;
+    firmware.suppress_reply = kind == CommandKind::SetAdaptive ? 0x34 : 0x35;
+    EXPECT_EQ(sdk->execute(handle, command).code, sdk::OdinResult::kTimeout);
+  }
+  firmware.suppress_reply = 5;
+  auto settings = defaults().streams.at(Channel::kImage0);
+  settings.enabled = true;
+  EXPECT_EQ(sdk->start(handle, Channel::kImage0, settings, 500).code, sdk::OdinResult::kTimeout);
+  firmware.suppress_reply = 0xFFFF;
   sdk->disconnect(handle);
 }
 }  // namespace

@@ -1,5 +1,5 @@
-# SDK 3.3.0 sends TCP subscriptions before listening. Firmware 3.1.3 connects
-# synchronously and rejects that ordering. Adapt only two build-tree copies;
+# SDK 3.3.0 sends TCP subscriptions before listening and registers command
+# replies after sending. Adapt build-tree copies for both ordering races;
 # the supplier tree, headers, public API and all other sources remain intact.
 function(_odin_replace_once variable before after)
   set(source "${${variable}}")
@@ -9,7 +9,7 @@ function(_odin_replace_once variable before after)
   string(LENGTH "${before}" match_length)
   math(EXPR removed "${original_length} - ${remaining_length}")
   if(NOT removed EQUAL match_length)
-    message(FATAL_ERROR "Odin SDK stream compatibility source mismatch; review the adapter for this SDK version")
+    message(FATAL_ERROR "Odin SDK network compatibility source mismatch; review the adapter for this SDK version")
   endif()
   string(REPLACE "${before}" "${after}" source "${source}")
   set(${variable} "${source}" PARENT_SCOPE)
@@ -17,9 +17,12 @@ endfunction()
 
 set(_odin_device "${CMAKE_CURRENT_SOURCE_DIR}/sdk_api/sdk/device/Odin2/odin2.cpp")
 set(_odin_command "${CMAKE_CURRENT_SOURCE_DIR}/sdk_api/sdk/command/odin2Command/OdinCommand.cpp")
-set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_odin_device}" "${_odin_command}")
+set(_odin_channel "${CMAKE_CURRENT_SOURCE_DIR}/sdk_api/sdk/src/odin_command_channel.cpp")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+  "${_odin_device}" "${_odin_command}" "${_odin_channel}")
 file(READ "${_odin_device}" _odin_device_source)
 file(READ "${_odin_command}" _odin_command_source)
+file(READ "${_odin_channel}" _odin_channel_source)
 
 _odin_replace_once(_odin_device_source [[  // Step 1: Send start-stream command. The command layer owns local-side
   // endpoint allocation; the device never sees the underlying port.
@@ -75,6 +78,59 @@ _odin_replace_once(_odin_command_source [[    channel_endpoints_[channel] = endp
   release_port.dismiss();
   return OdinResult::kOk;]])
 
+# A reply can arrive on the receive thread before Send() returns. Publish
+# its waiter first, and remove it if sending fails or only writes a prefix.
+_odin_replace_once(_odin_channel_source [[  // Send via transport (uses pre-configured remote target)
+  int sent = transport_->Send(frame.data(), frame.size());
+  if (sent < 0 || static_cast<size_t>(sent) != frame.size()) {
+    return false;
+  }
+
+  PendingCommand pending;]] [[  PendingCommand pending;]])
+_odin_replace_once(_odin_channel_source
+  [[  pending.deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms);]]
+  [[  // Start the timeout after Send(), as in the supplier implementation.
+  pending.deadline = std::chrono::steady_clock::time_point::max();]])
+_odin_replace_once(_odin_channel_source [[    pending_[seq] = pending;
+  }
+
+  return true;]] [[    pending_[seq] = pending;
+  }
+
+  // Register before sending so an immediate ACK cannot be discarded.
+  int sent = transport_->Send(frame.data(), frame.size());
+  if (sent < 0 || static_cast<size_t>(sent) != frame.size()) {
+    std::lock_guard<std::mutex> lock(pending_mutex_);
+    pending_.erase(seq);
+    return false;
+  }
+
+  {
+    std::lock_guard<std::mutex> lock(pending_mutex_);
+    auto it = pending_.find(seq);
+    if (it != pending_.end()) {
+      it->second.deadline = std::chrono::steady_clock::now() +
+                            std::chrono::milliseconds(timeout_ms);
+    }
+  }
+
+  return true;]])
+
+# SendSync reports completion separately from response.result. Preserve a
+# timeout/stopped result instead of interpreting its empty payload as an ACK.
+foreach(_odin_operation SendStartStream SetAdaptiveParam GetAdaptiveParam)
+  set(_odin_timeout [[    LOG_ERROR("OdinCommand::@operation@: timeout\n");
+    return OdinResult::kTimeout;
+  }
+]])
+  string(REPLACE "@operation@" "${_odin_operation}" _odin_timeout "${_odin_timeout}")
+  _odin_replace_once(_odin_command_source "${_odin_timeout}" "${_odin_timeout}
+  if (response.result != OdinResult::kOk) {
+    return response.result;
+  }
+")
+endforeach()
+
 set(_odin_compat_dir "${CMAKE_CURRENT_BINARY_DIR}/sdk_stream_compat")
 set(_odin_compat_include "#include \"${CMAKE_CURRENT_SOURCE_DIR}/src/sdk_stream_compat.hpp\"\n")
 file(MAKE_DIRECTORY "${_odin_compat_dir}")
@@ -89,6 +145,7 @@ function(_odin_write_compat path content)
 endfunction()
 _odin_write_compat("${_odin_compat_dir}/odin2.cpp" "${_odin_compat_include}${_odin_device_source}")
 _odin_write_compat("${_odin_compat_dir}/OdinCommand.cpp" "${_odin_compat_include}${_odin_command_source}")
+_odin_write_compat("${_odin_compat_dir}/odin_command_channel.cpp" "${_odin_channel_source}")
 get_target_property(_odin_sources odin_device_obj SOURCES)
 get_target_property(_odin_source_dir odin_device_obj SOURCE_DIR)
 set(_odin_adapted_sources)
@@ -103,3 +160,12 @@ foreach(source IN LISTS _odin_sources)
   endif()
 endforeach()
 set_property(TARGET odin_device_obj PROPERTY SOURCES "${_odin_adapted_sources}")
+
+get_target_property(_odin_sources odin_sdk SOURCES)
+list(FIND _odin_sources "${_odin_channel}" _odin_channel_index)
+if(_odin_channel_index EQUAL -1)
+  message(FATAL_ERROR "Cannot locate Odin SDK command channel source")
+endif()
+list(REMOVE_AT _odin_sources ${_odin_channel_index})
+list(APPEND _odin_sources "${_odin_compat_dir}/odin_command_channel.cpp")
+set_property(TARGET odin_sdk PROPERTY SOURCES "${_odin_sources}")
