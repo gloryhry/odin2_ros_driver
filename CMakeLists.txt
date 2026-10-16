@@ -96,7 +96,8 @@ if(CATKIN_ENABLE_TESTING)
   if(TARGET sdk_stream_tests)
     target_link_libraries(sdk_stream_tests odin2_driver_core)
     target_include_directories(sdk_stream_tests PRIVATE
-      sdk_api/sdk/protocol/OdinProtocol sdk_api/sdk/protocol/IProtocol sdk_api/3rdparty)
+      sdk_api/sdk/protocol/OdinProtocol sdk_api/sdk/protocol/IProtocol sdk_api/3rdparty
+      sdk_api/sdk/src sdk_api/sdk/transport/ITransport)
   endif()
   catkin_install_python(PROGRAMS test/integration.py test/async_integration.py test/startup_query.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
